@@ -1,4 +1,3 @@
-import os
 import pickle as pkl
 
 import cv2
@@ -16,7 +15,7 @@ from theano import tensor as tt
 
 from basiss.models.distributions import BetaSum
 from basiss.plots import plot_density_stacked
-from basiss.utits.generate_data import mask_infeasible, generate_data
+from basiss.utits.generate_data import mask_infeasible, generate_data, get_autobright_file
 from basiss.utits.sample import Sample
 
 # code for primary data utits
@@ -29,16 +28,6 @@ old_prefix = ["Valid_", "Valid_", "", ""]
 
 masks_svgs = ['../contours/R1_PD9694d_contour_only-01.svg', '../contours/R1_PD9694d_contour_only-01.svg', None, None]
 
-
-def contains_autobright(dirname):
-    markers = ['autobright.tif', "autbright.tif", ]
-    for file in os.listdir(dirname):
-        for marker in markers:
-            if marker in file:
-                return True
-    return False
-
-
 sample_list = []
 for i in range(len(new_labels)):
     sample_list.append(Sample(
@@ -49,20 +38,8 @@ for i in range(len(new_labels)):
 
 for i, sample in enumerate(sample_list):
     dirname = f"../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/"
-    single_flag = True
-    if "".join(os.listdir(dirname)).find("full") != -1:
-        single_flag = False
-
-    for file in os.listdir(f"../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/"):
-        if single_flag:
-            if file.find("autobright.tif") != -1 or file.find("autbright.tif") != -1:
-                break
-        else:
-            if file.find("full_autobright.tif") != -1:
-                break
-
-    sample.transform_points2background(
-        f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/{file}', upsampling=15)
+    file = get_autobright_file(dirname)
+    sample.transform_points2background(f'{dirname}/{file}', upsampling=15)
 
 sample_list[0].add_gene_data(sample_list[1])
 sample_list[2].add_gene_data(sample_list[3])
@@ -70,25 +47,9 @@ sample_list[2].add_gene_data(sample_list[3])
 d3_sample = sample_list[0]
 m2_sample = sample_list[2]
 
-df_dict = {
-    "Name": d3_sample.data["Gene"],
-    "Code": np.nan,
-    "Probability": d3_sample.iss_probability,
-    "X": d3_sample.data["PosX"],
-    "Y": d3_sample.data["PosY"],
-    "Tile": np.nan,
-}
-pd.DataFrame(df_dict).to_csv(f"../GMM_decoding/remapped/Mut_PD9694d3_composed_GMMdecoding_remapped.csv", index=False)
+d3_sample.to_csv(f"../GMM_decoding/remapped/Mut_PD9694d3_composed_GMMdecoding_remapped.csv")
+m2_sample.to_csv(f"../GMM_decoding/remapped/Mut_PD9694m2_composed_GMMdecoding_remapped.csv")
 
-df_dict = {
-    "Name": m2_sample.data["Gene"],
-    "Code": np.nan,
-    "Probability": m2_sample.iss_probability,
-    "X": m2_sample.data["PosX"],
-    "Y": m2_sample.data["PosY"],
-    "Tile": np.nan,
-}
-pd.DataFrame(df_dict).to_csv(f"../GMM_decoding/remapped/Mut_PD9694m2_composed_GMMdecoding_remapped.csv", index=False)
 # main mut data
 new_labels = ['a3', 'c3', 'l2']
 old_labels = ['2', '5', '6.1']
@@ -110,36 +71,10 @@ for i in range(len(new_labels)):
         masks_svg=masks_svgs[i]))
 
 for i, sample in enumerate(mut_sample_list):
-    single_flag = True
-    if ("".join(os.listdir(f"../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/")).find("full")
-            != -1
-    ):
-        single_flag = False
-
-    for file in os.listdir(f"../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/"):
-        if single_flag:
-            if file.find("autobright.tif") != -1 or file.find("autbright.tif") != -1:
-                break
-        else:
-            if file.find("full_autobright.tif") != -1:
-                break
-    print(f"../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/{file}")
-
-    sample.transform_points2background(
-        f"../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/{file}", upsampling=15
-    )
-
-    df_dict = {
-        "Name": sample.data["Gene"],
-        "Code": np.nan,
-        "Probability": sample.iss_probability,
-        "X": sample.data["PosX"],
-        "Y": sample.data["PosY"],
-        "Tile": np.nan,
-    }
-    pd.DataFrame(df_dict).to_csv(
-        f"../GMM_decoding/remapped/Mut_PD9694{new_labels[i]}_GMMdecoding_remapped.csv", index=False
-    )
+    dirname = f"../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/"
+    file = get_autobright_file(dirname)
+    sample.transform_points2background(f'{dirname}/{file}', upsampling=15)
+    sample.to_csv(f"../GMM_decoding/remapped/Mut_PD9694{new_labels[i]}_GMMdecoding_remapped.csv")
 
 mut_sample_list = [d3_sample] + mut_sample_list[:] + [m2_sample]
 
@@ -160,27 +95,10 @@ for i in range(len(new_labels)):
         masks_svg=masks_svgs[i]))
 
 for i, sample in enumerate(val_sample_list):
-
-    single_flag = True
-    if ''.join(os.listdir(f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/')).find(
-            'full') != -1:
-        single_flag = False
-
-    for file in os.listdir(f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/'):
-        if single_flag:
-            if file.find('autobright.tif') != -1 or file.find('autbright.tif') != -1:
-                break
-        else:
-            if file.find('full_autobright.tif') != -1:
-                break
-
-    sample.transform_points2background(
-        f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/{file}', upsampling=15)
-
-    df_dict = {'Name': sample.data['Gene'], 'Code': np.nan, 'Probability': sample.iss_probability,
-               'X': sample.data['PosX'], 'Y': sample.data['PosY'], 'Tile': np.nan}
-    pd.DataFrame(df_dict).to_csv(f'../GMM_decoding/remapped/Mut_PD9694{new_labels[i]}_GMMdecoding_remapped.csv',
-                                 index=False)
+    dirname = f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/'
+    file = get_autobright_file(dirname)
+    sample.transform_points2background(f'{dirname}/{file}', upsampling=15)
+    sample.to_csv(f'../GMM_decoding/remapped/Mut_PD9694{new_labels[i]}_GMMdecoding_remapped.csv')
 
 # Exp and Immune import
 
@@ -306,27 +224,10 @@ for i in range(len(new_labels)):
         masks_svg=masks_svgs[i]))
 
 for i, sample in enumerate(exp_sample_list):
-
-    single_flag = True
-    if ''.join(os.listdir(f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/')).find(
-            'full') != -1:
-        single_flag = False
-
-    for file in os.listdir(f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/'):
-        if single_flag:
-            if file.find('autobright.tif') != -1 or file.find('autbright.tif') != -1:
-                break
-        else:
-            if file.find('full_autobright.tif') != -1:
-                break
-
-    sample.transform_points2background(
-        f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/{file}', upsampling=15)
-
-    df_dict = {'Name': sample.data['Gene'], 'Code': np.nan, 'Probability': sample.iss_probability,
-               'X': sample.data['PosX'], 'Y': sample.data['PosY'], 'Tile': np.nan}
-    pd.DataFrame(df_dict).to_csv(f'../GMM_decoding/remapped/Exp_PD9694{new_labels[i]}_GMMdecoding_remapped.csv',
-                                 index=False)
+    dirname = f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/'
+    file = get_autobright_file(dirname)
+    sample.transform_points2background(f'{dirname}/{file}', upsampling=15)
+    sample.to_csv(f'../GMM_decoding/remapped/Exp_PD9694{new_labels[i]}_GMMdecoding_remapped.csv')
 
     # Legacy code, change when have time
     sample.update_coords(warp_matrix_file=Matrices[old_labels[i]][0],
@@ -361,51 +262,22 @@ for i in range(len(new_labels)):
         cell_data=f'../ultra_hd_segmentation/Patient_2085/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}_segmented/{old_prefix[i]}2805_{old_labels[i]}_cellpos.csv'))
 
 for i, sample in enumerate(imm_sample_list):
-
-    single_flag = True
-    if ''.join(os.listdir(f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/')).find(
-            'full') != -1:
-        single_flag = False
-
-    for file in os.listdir(f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/'):
-        if single_flag:
-            if file.find('autobright.tif') != -1 or file.find('autbright.tif') != -1:
-                break
-        else:
-            if file.find('full_autobright.tif') != -1:
-                break
-
-    sample.transform_points2background(
-        f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/{file}', upsampling=15)
+    dirname = f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/'
+    file = get_autobright_file(dirname)
+    sample.transform_points2background(f'{dirname}/{file}', upsampling=15)
 
 imm_sample_list[0].add_gene_data(imm_sample_list[1])
 m2_imm_sample = imm_sample_list[0]
 
-df_dict = {
-    "Name": m2_imm_sample.data["Gene"],
-    "Code": np.nan,
-    "Probability": m2_imm_sample.iss_probability,
-    "X": m2_imm_sample.data["PosX"],
-    "Y": m2_imm_sample.data["PosY"],
-    "Tile": np.nan,
-}
-pd.DataFrame(df_dict).to_csv(f"../GMM_decoding/remapped/Imm_PD9694m2_composed_GMMdecoding_remapped.csv", index=False)
+m2_imm_sample.to_csv(f"../GMM_decoding/remapped/Imm_PD9694m2_composed_GMMdecoding_remapped.csv")
 
-m2_imm_sample.update_coords(
-    warp_matrix_file=Matrices["8"][1],
-    resizing_params={
-        "source": [
-            np.array(sample.get_img_size(Im_Sources["8"][2])),
-            [Images["8"][2].shape[1], Images["8"][2].shape[0]],
-        ],
-        "target": [
-            np.array(sample.get_img_size(Im_Sources["8"][0])),
-            [Images["8"][0].shape[1], Images["8"][0].shape[0]],
-        ],
-    },
-    small_img_source=Images["8"][2],
-    small_img_target=Images["8"][0],
-)
+m2_imm_sample.update_coords(warp_matrix_file=Matrices["8"][1],
+                            resizing_params={"source": [np.array(m2_imm_sample.get_img_size(Im_Sources["8"][2])),
+                                                        [Images["8"][2].shape[1], Images["8"][2].shape[0]]],
+                                             "target": [np.array(m2_imm_sample.get_img_size(Im_Sources["8"][0])),
+                                                        [Images["8"][0].shape[1], Images["8"][0].shape[0]]]},
+                            small_img_source=Images["8"][2],
+                            small_img_target=Images["8"][0])
 
 new_labels = ['d2', 'a2', 'c2', 'l2']
 old_labels = ['7', '2', '5', '6.1']
@@ -428,26 +300,10 @@ for i in range(len(new_labels)):
         masks_svg=masks_svgs[i]))
 
 for i, sample in enumerate(imm_sample_list):
-    single_flag = True
-    if ''.join(os.listdir(f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/')).find(
-            'full') != -1:
-        single_flag = False
-
-    for file in os.listdir(f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/'):
-        if single_flag:
-            if file.find('autobright.tif') != -1 or file.find('autbright.tif') != -1:
-                break
-        else:
-            if file.find('full_autobright.tif') != -1:
-                break
-
-    sample.transform_points2background(
-        f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/{file}', upsampling=15)
-
-    df_dict = {'Name': sample.data['Gene'], 'Code': np.nan, 'Probability': sample.iss_probability,
-               'X': sample.data['PosX'], 'Y': sample.data['PosY'], 'Tile': np.nan}
-    pd.DataFrame(df_dict).to_csv(f'../GMM_decoding/remapped/Imm_PD9694{new_labels[i]}_GMMdecoding_remapped.csv',
-                                 index=False)
+    dirname = f'../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/'
+    file = get_autobright_file(dirname)
+    sample.transform_points2background(f'{dirname}/{file}', upsampling=15)
+    sample.to_csv(f'../GMM_decoding/remapped/Imm_PD9694{new_labels[i]}_GMMdecoding_remapped.csv')
 
     sample.update_coords(warp_matrix_file=Matrices[old_labels[i]][1],
                          resizing_params={'source': [np.array(sample.get_img_size(Im_Sources[old_labels[i]][2])),
@@ -782,10 +638,7 @@ def format_number(x, dec=1):
         return round(x, dec)
 
 
-
-
 mpl.rcParams['pdf.fonttype'] = 42
-
 
 fixed_y_gridsize = np.array([[int(x) for x in list(mut_sample_list[0]._scaffold_image.shape)[::-1]][1], 300, 300])
 fixed_y_size = fixed_y_gridsize.sum() / 300
@@ -1601,6 +1454,7 @@ exp_gene2type = {exp_gene_groups['ISS Target name'].values[i]: exp_gene_groups['
 exp_gene2oncotype = {OncotypeDX['ISS Target name'].values[i]: OncotypeDX['OncotypeDX'].values[i] for i in
                      range(OncotypeDX.shape[0])}
 
+
 def gene2funcgroup(gene, pannel):
     if pannel == 'imm':
         try:
@@ -1614,6 +1468,7 @@ def gene2funcgroup(gene, pannel):
             return None
     else:
         raise KeyError('either exp or imm')
+
 
 def gene2funccolor(gene, pannel):
     colors = {
