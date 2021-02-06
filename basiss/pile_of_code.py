@@ -9,6 +9,7 @@ import pandas as pd
 import pymc3 as pm
 import theano
 from matplotlib.cm import get_cmap
+from matplotlib.colors import ListedColormap
 from scipy import stats
 from skimage import exposure
 from theano import tensor as tt
@@ -16,6 +17,7 @@ from theano import tensor as tt
 from basiss.models.distributions import BetaSum
 from basiss.plots import plot_density_stacked
 from basiss.utits.generate_data import mask_infeasible, generate_data, get_autobright_file
+from basiss.utits.pval_bayes import pval_bayes
 from basiss.utits.sample import Sample
 
 # code for primary data utits
@@ -576,7 +578,7 @@ samples_hierarchical_errosion = approx_hierarchical_errosion.sample(300)
 
 # Plot fields
 
-from matplotlib.colors import ListedColormap
+
 
 alphas = np.concatenate((np.abs(np.linspace(0, 0, 256 - 200)), np.abs(np.linspace(0, 1.0, 256 - 56))))
 N = 256
@@ -734,7 +736,7 @@ pixel2um = 0.325
 cmaps = {'grey': "Greys", 'green': "Greens", 'purple': "Purples", 'magenta': "RdPu", 'blue': "Blues", 'red': "Reds",
          'orange': "YlOrBr", 'wt': "Greys", 'residuals': "Greys"}
 
-names = ['grey', 'green', 'purple', 'blue', 'red', 'orange'] + 1 * ['wt']
+names = ['grey', 'green', 'purple', 'blue', 'red', 'orange'] + ['wt']
 c = [get_cmap(cmaps[n])(150) for n in names]
 # c[0] = get_cmap("cool")(10)
 F = [samples_hierarchical_errosion[f'F_{s}'].mean(0).reshape(*sample_dims[s], -1) for s in range(n_samples)]
@@ -1128,7 +1130,7 @@ data_dict = {k: data_dict[k] for k in ['a', 'c']}
 
 dat = [data_dict[k][:, :, 0] / data_dict[k][:, :, 1] for k in ['a', 'c']]
 dat = [np.log10(dat[i]) for i, k in enumerate(['a', 'c'])]
-p_vals = [pval_baes(data_dict[k][:, :, 0], data_dict[k][:, :, 1], 1.5) for k in ['a', 'c']]
+p_vals = [pval_bayes(data_dict[k][:, :, 0], data_dict[k][:, :, 1], 1.5) for k in ['a', 'c']]
 gene_filtered = np.where(np.logical_or(p_vals[0] < 2, p_vals[1] < 2))[0]
 dat = [dat[i][:, gene_filtered] for i, k in enumerate(['a', 'c'])]
 
@@ -1500,98 +1502,3 @@ def gene2oncocolor(gene):
     except KeyError:
         return default_color
 
-
-dat = [data_dict[k][:, :, 0] / data_dict[k][:, :, 1] for k in ['d', 'l']]
-dat = [np.log10(dat[i]) for i, k in enumerate(['d', 'l'])]
-p_vals = [pval_baes(data_dict[k][:, :, 0], data_dict[k][:, :, 1], 1.5) for k in ['d', 'l']]
-gene_filtered = np.where(np.logical_or(p_vals[0] < 2, p_vals[1] < 2))[0]
-dat = [dat[i][:, gene_filtered] for i, k in enumerate(['d', 'l'])]
-
-from matplotlib.ticker import MultipleLocator, FixedLocator, FuncFormatter
-
-###### Locators for Y-axis
-# set tickmarks at multiples of 1.
-majorLocator = MultipleLocator(1.)
-# create custom minor ticklabels at logarithmic positions
-ra = np.array([[n + (1. - np.log10(i))] for n in range(-3, 3) for i in [2, 3, 4, 5, 6, 7, 8, 9][::-1]]).flatten() * -1.
-minorLocator = FixedLocator(ra)
-###### Formatter for Y-axis (chose any of the following two)
-# show labels as powers of 10 (looks ugly)
-# majorFormatter= FuncFormatter(lambda x,p: "{:.1e}".format(10**x) )
-# or using MathText (looks nice, but not conform to the rest of the layout)
-majorFormatter = FuncFormatter(lambda x, p: r"$10^{" + "{x:d}".format(x=int(x)) + r"}$")
-
-percentiles_dat = [[np.percentile(dat[s], pct, axis=0) for pct in [2.5, 50, 97.5]] for s in range(2)]
-
-for pannel_id in range(2):
-
-    subset = np.where(E_pannel_from[gene_filtered] == ['imm', 'exp'][pannel_id])[0]
-    sub_percentiles_dat = [[percentiles_dat[s][i][subset] for i in range(3)] for s in range(2)]
-
-    log_sum_pval = []
-    for i in range(len(p_vals[0][gene_filtered][subset])):
-        if np.sign(sub_percentiles_dat[0][1][i]) == np.sign(sub_percentiles_dat[1][1][i]):
-            val = -2 * (np.log(p_vals[0][gene_filtered][subset][i]) + np.log(p_vals[1][gene_filtered][subset][i]))
-        else:
-            p1 = p_vals[0][gene_filtered][subset][i]
-            p2 = p_vals[1][gene_filtered][subset][i]
-
-            p1, p2 = np.minimum(p1, p2), np.maximum(p1, p2)
-            val = -2 * (np.log(p1) + np.log(1))
-        log_sum_pval.append(val)
-
-    # p_vals_chi2 = np.minimum(p_vals[0][gene_filtered][subset], p_vals[1][gene_filtered][subset])
-    p_vals_chi2 = np.round(stats.chi2.sf(log_sum_pval, 4), 5)
-
-    ranks = -np.round(1 / p_vals_chi2 * np.sign(sub_percentiles_dat[0][1] + sub_percentiles_dat[1][1]), 2)
-    order = []
-    for r in np.unique(ranks):
-        ranked_order = np.where(ranks == r)[0]
-        magnitude_order = list(ranked_order[np.argsort(
-            ((sub_percentiles_dat[0][1] + sub_percentiles_dat[1][1]))[np.where(ranks == r)[0]])[::-1]])
-        order += magnitude_order
-
-    boundaries = [0] + list(np.cumsum([len(np.where(ranks == r)[0]) for r in np.unique(ranks)]))
-    boundaries_pval = np.array([0] + list([p_vals_chi2[np.where(ranks == r)[0]][0] for r in np.unique(ranks)]))
-
-    p_val_th = 0.05
-
-    gene_names = E_names[gene_filtered][subset][order]
-    if pannel_id == 1:
-        color = ['darkgrey', 'lightgrey']
-    else:
-        color = ['darkgrey', 'lightgrey']
-    bpv = np.array(boundaries)[np.where(np.diff(boundaries_pval < p_val_th))[0]]
-    xposdiff = np.ones(len(order))
-    squeezed = 0.2
-    xposdiff[bpv[0] + 1:bpv[1]] = squeezed
-    xpos = np.cumsum(xposdiff) * 2
-    widths = xposdiff.copy()
-    widths[bpv[0]] = squeezed
-    for s in range(2):
-        for i in range(3):
-            sub_percentiles_dat[s][i] = sub_percentiles_dat[s][i][order]
-
-    plt.figure(figsize=(xpos[-1] * 0.3, 3))
-    plt.bar(xpos - 0.4 * widths, sub_percentiles_dat[0][1],
-            yerr=[np.abs(sub_percentiles_dat[0][0] - sub_percentiles_dat[0][1]),
-                  np.abs(sub_percentiles_dat[0][2] - sub_percentiles_dat[0][1])], width=0.7 * widths,
-            color=color[0], error_kw={'linewidth': widths * 1, 'alpha': 0.8})
-    plt.bar(xpos + 0.4 * widths, sub_percentiles_dat[1][1],
-            yerr=[np.abs(sub_percentiles_dat[1][0] - sub_percentiles_dat[1][1]),
-                  np.abs(sub_percentiles_dat[1][2] - sub_percentiles_dat[1][1])], width=0.7 * widths,
-            color=color[1], error_kw={'linewidth': widths * 1, 'alpha': 0.8})
-
-    plt.gca().set_xticks(xpos)
-    gene_names[widths == squeezed] = ''
-    plt.gca().set_xticklabels(gene_names, rotation=90)
-    plt.gca().set_title(['immune', 'expression'][pannel_id])
-    plt.xlim(xpos[0] - 2, xpos[-1] + 2)
-    plt.ylim(-1.3, 1.3)
-    plt.gca().yaxis.set_major_locator(majorLocator)
-    plt.gca().yaxis.set_minor_locator(minorLocator)
-    plt.gca().yaxis.set_major_formatter(majorFormatter)
-    plt.gca().spines['right'].set_visible(False)
-    plt.gca().spines['top'].set_visible(False)
-    plt.savefig(f'./images/2085_GreenVsOrange_{["imm", "exp"][pannel_id]}_bars_xi2.pdf'.format(i))
-    plt.show()
