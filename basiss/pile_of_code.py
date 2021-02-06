@@ -3,72 +3,21 @@ import pickle as pkl
 
 import cv2
 import cv2 as cv
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pymc3 as pm
 import theano
+from matplotlib.cm import get_cmap
 from scipy import stats
 from skimage import exposure
 from theano import tensor as tt
 
+from basiss.models.distributions import BetaSum
+from basiss.plots import plot_density_stacked
+from basiss.utits.generate_data import mask_infeasible, generate_data
 from basiss.utits.sample import Sample
-
-
-def mask_infeasible(mut_sample_list, scale, probability=0.6, critical_genes=False, plot=False):
-    mask = []
-    for i in range(len(mut_sample_list)):
-        mut_sample_list[i].data_to_grid(scale_factor=scale, probability=0.6)
-        t = np.array([s for s in mut_sample_list[i].gene_grid.values()])[:-3].sum(0)
-        mask_infisiable = mut_sample_list[i].gene_grid["infeasible"] / t < 0.1
-        mask_infisiable *= mut_sample_list[i].cell_grid > 5
-
-        if critical_genes:
-            if i == 0:
-                mask_infisiable *= (
-                        mut_sample_list[i].gene_grid["PTEN2mut"]
-                        + mut_sample_list[i].gene_grid["LRP1Bmut"]
-                        + mut_sample_list[i].gene_grid["NOB1wt"] <= 3
-                )
-
-        if plot:
-            plt.figure(figsize=(8, 4))
-            plt.imshow(mask_infisiable.T[::-1, :])
-
-        mask.append(mask_infisiable.flatten())
-
-    return mask
-
-
-def generate_data4model(samples_list, genes, M, n_aug=1):
-    n_samples = len(samples_list)
-    n_genes = len(genes)
-
-    iss_data = [
-        np.transpose(np.array([samples_list[i].gene_grid[k] for k in genes]), [1, 2, 0]).reshape(-1, n_genes)
-        for i in range(n_samples)
-    ]
-
-    tiles_axes = [samples_list[i].tile_axis for i in range(n_samples)]
-
-    cells_counts = [samples_list[i].cell_grid.flatten() for i in range(n_samples)]
-    sample_dims = [(int(tiles_axes[i][0][-1] + 1), int(tiles_axes[i][1][-1] + 1)) for i in range(n_samples)]
-    n_factors = M.shape[0]
-    n_aug = 1
-
-    return {
-        "iss_data": iss_data,
-        "tiles_axes": tiles_axes,
-        "cells_counts": cells_counts,
-        "sample_dims": sample_dims,
-        "n_factors": n_factors,
-        "n_aug": n_aug,
-        "tree_matrix": M,
-        "n_samples": n_samples,
-        "n_genes": n_genes,
-        "genes": genes,
-    }
-
 
 # code for primary data utits
 # fusing split images
@@ -80,19 +29,28 @@ old_prefix = ["Valid_", "Valid_", "", ""]
 
 masks_svgs = ['../contours/R1_PD9694d_contour_only-01.svg', '../contours/R1_PD9694d_contour_only-01.svg', None, None]
 
+
+def contains_autobright(dirname):
+    markers = ['autobright.tif', "autbright.tif", ]
+    for file in os.listdir(dirname):
+        for marker in markers:
+            if marker in file:
+                return True
+    return False
+
+
 sample_list = []
 for i in range(len(new_labels)):
     sample_list.append(Sample(
         iss_data=f'/nfs/research1/gerstung/mg617/ISS_data/Mut_PD9694{new_labels[i]}/decoding/Mut_PD9694{new_labels[i]}_GMMdecoding.csv',
-        image=f'/nfs/research1/gerstung/artem/projects/spatial_bayes/GMM_restored_DAPI/Mut_PD9694{new_labels[i]}.tif',
+        image=f"/nfs/research1/gerstung/artem/projects/spatial_bayes/GMM_restored_DAPI/Mut_PD9694{new_labels[i]}.tif",
         cell_data=f'../ultra_hd_segmentation/Patient_2085/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}_segmented/{old_prefix[i]}2805_{old_labels[i]}_cellpos.csv',
         masks_svg=masks_svgs[i]))
 
 for i, sample in enumerate(sample_list):
-
+    dirname = f"../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/"
     single_flag = True
-    if "".join(os.listdir(f"../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/")).find(
-            "full") != -1:
+    if "".join(os.listdir(dirname)).find("full") != -1:
         single_flag = False
 
     for file in os.listdir(f"../Globus/DAPI_2805/{old_folders[i]}/{old_prefix[i]}2805_{old_labels[i]}/"):
@@ -621,37 +579,20 @@ for s in range(5):
 scale = 3
 
 mut_mask = mask_infeasible(mut_sample_list, scale, probability=0.6, plot=False)
-data4model = generate_data4model(samples_list=mut_sample_list, genes=tree.columns, M=M, n_aug=1)
+data_for_model = generate_data(samples_list=mut_sample_list, genes=tree.columns, M=M, n_aug=1)
 
-n_samples = data4model["n_samples"]
-n_genes = data4model["n_genes"]
-iss_data = data4model["iss_data"]
-tiles_axes = data4model["tiles_axes"]
-cells_counts = data4model["cells_counts"]
-sample_dims = data4model["sample_dims"]
-n_factors = data4model["n_factors"]
-n_aug = data4model["n_aug"]
+n_samples = data_for_model["n_samples"]
+n_genes = data_for_model["n_genes"]
+iss_data = data_for_model["iss_data"]
+tiles_axes = data_for_model["tiles_axes"]
+cells_counts = data_for_model["cells_counts"]
+sample_dims = data_for_model["sample_dims"]
+n_factors = data_for_model["n_factors"]
+n_aug = data_for_model["n_aug"]
 
 mask = mut_mask
 
-
 # Actual model definition and run
-class Beta_sum(pm.Beta):
-    def __init__(self, n=1, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.n = n
-
-    def logp(self, value):
-        return super().logp(value) * self.n
-
-
-class Beta_sum(pm.Beta):
-    def __init__(self, n=1, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.n = n
-
-    def logp(self, value):
-        return super().logp(value) * self.n
 
 
 with pm.Model() as model_hierarchical_errosion:
@@ -746,11 +687,11 @@ with pm.Model() as model_hierarchical_errosion:
     #           / (T[s][:,np.where(tree.columns == gene + 'wt')[0][0]] \
     #              + T[s][:,np.where(tree.columns == gene + 'mut')[0][0]]) for gene in wgs_names] for s in range(n_samples)]
 
-    # beta_prior = [Beta_sum('beta_prior_{}'.format(s), n=(sample_dims[s][0] * sample_dims[s][1])/100, alpha=(wgs_mut[s] / (wgs_wt[s] + wgs_mut[s])), beta=((1 - wgs_mut[s] / (wgs_wt[s] + wgs_mut[s]))), observed=T_freq[s][:]) for s in range(n_samples)]
-    # beta_prior = [Beta_sum('beta_prior_{}'.format(s), n=(sample_dims[s][0] * sample_dims[s][1]), alpha=(wgs_mut[s]/5 + 1), beta=(wgs_wt[s]/5 + 1), observed=T_freq[s][:]) for s in range(n_samples)]
+    # beta_prior = [BetaSum('beta_prior_{}'.format(s), n=(sample_dims[s][0] * sample_dims[s][1])/100, alpha=(wgs_mut[s] / (wgs_wt[s] + wgs_mut[s])), beta=((1 - wgs_mut[s] / (wgs_wt[s] + wgs_mut[s]))), observed=T_freq[s][:]) for s in range(n_samples)]
+    # beta_prior = [BetaSum('beta_prior_{}'.format(s), n=(sample_dims[s][0] * sample_dims[s][1]), alpha=(wgs_mut[s]/5 + 1), beta=(wgs_wt[s]/5 + 1), observed=T_freq[s][:]) for s in range(n_samples)]
     beta_prior = [
-        Beta_sum('beta_prior_{}'.format(s), n=(mask[s].sum()), alpha=(wgs_mut[s] / 5 + 1), beta=(wgs_wt[s] / 5 + 1),
-                 observed=T_freq[s][:]) for s in range(n_samples)]
+        BetaSum('beta_prior_{}'.format(s), n=(mask[s].sum()), alpha=(wgs_mut[s] / 5 + 1), beta=(wgs_wt[s] / 5 + 1),
+                observed=T_freq[s][:]) for s in range(n_samples)]
 
     lm_er = [pm.Deterministic('lm_er_{}'.format(s), tt.dot(lm[s], confusion_matrix) + xi[s][None, :]) for s in
              range(n_samples)]
@@ -820,83 +761,6 @@ plt.show()
 
 # Plot composition with densities
 
-from scipy.interpolate import make_interp_spline
-
-
-def plot_density_stacked(sampleID, site, save=False, ax=None, flipped=False, rescale_y=1):
-    names = ['grey', 'green', 'purple', 'blue', 'red', 'orange', 'wt']
-
-    SampleID = sampleID
-    site = site
-    if flipped:
-        site = -site
-    grid_mm2 = (Sample.get_img_size(mut_sample_list[SampleID].image)[0] / sample_dims[SampleID][0]) ** 2 / 1e6
-    data = samples_hierarchical_errosion['F_{}'.format(sampleID)][:, :, :].reshape(300, *sample_dims[sampleID], 9)[:,
-           ::, -site, :] * \
-           cells_counts[sampleID].reshape(sample_dims[sampleID])[None, ::, -site, None] / grid_mm2
-    data = np.concatenate([data[:, :, [0, 1, 2, 3, 4, 5]], data[:, :, [6, 7]].sum(axis=2)[:, :, None]], axis=2)
-    # print(SampleID, site)
-    # plt.figure(figsize=(12,6))
-    # plt.imshow(cells_counts[sampleID].reshape(sample_dims[sampleID]))
-    # plt.gca().axis('off')
-    # print(cells_counts[sampleID].reshape(sample_dims[sampleID]).shape)
-    # plt.axvline(sample_dims[sampleID][1]-site, color='white')
-    # plt.show()
-    # plt.figure(figsize=(12,6))
-    # plt.imshow(mut_sample_list[3]._scaffold_image.T, vmax=50)
-    # plt.axvline(mut_sample_list[3]._scaffold_image.shape[0] - ((site-1) * 33.559), color='white')
-    # plt.gca().axis('off')
-    # plt.show()
-    CI = (2.5, 97.5)
-    color_list = [get_cmap(cmaps[name])(150) for name in names]
-    line_id_list = [0, 1, 2, 3, 4, 5, 6]
-    # 1e3 / 0.325 / 15
-    xold = np.linspace(0, sample_dims[SampleID][0], sample_dims[SampleID][0])
-    xnew = np.linspace(0, (sample_dims[SampleID][0]), 5000)
-
-    lines_smooth = []
-    for i, idx in enumerate(line_id_list):
-        line = data.mean(axis=0)[:, idx].T
-        line_low = np.percentile(data, CI[0], axis=0)[:, idx].T
-        line_up = np.percentile(data, CI[1], axis=0)[:, idx].T
-
-        spl_line = make_interp_spline(xold, line, k=2)
-        line_smooth = spl_line(xnew)
-        line_smooth[line_smooth < 0] = 0
-        lines_smooth.append(line_smooth)
-
-    cum = np.zeros(lines_smooth[0].shape)
-    if ax is not None:
-        for i in range(len(line_id_list) - 1):
-            ax.fill_between(xnew * rescale_y, cum, cum + lines_smooth[i], color=color_list[i], alpha=1)
-            cum += lines_smooth[i]
-        ax.plot(xnew * rescale_y, cum + lines_smooth[i + 1], color='black', alpha=1)
-
-        ax.set_xlim(-1)
-        ax.set_ylim(0, 2000)
-
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
-        ax.spines['bottom'].set_visible(False)
-        ax.get_xaxis().set_visible(False)
-    else:
-        # plt.figure(figsize=(int(Sample.get_img_size(mut_sample_list[SampleID].image)[0]/2000),2))
-        for i in range(len(line_id_list) - 1):
-            plt.fill_between(xnew * rescale_y, cum, cum + lines_smooth[i], color=color_list[i], alpha=1)
-            cum += lines_smooth[i]
-        plt.plot(xnew * rescale_y, cum + lines_smooth[i + 1], color='black', alpha=1)
-        # cum += lines_smooth[i]
-
-        plt.xlim(-1)
-        plt.ylim(0, 2000)
-
-        plt.gca().spines['right'].set_visible(False)
-        plt.gca().spines['top'].set_visible(False)
-        plt.gca().spines['bottom'].set_visible(False)
-        plt.gca().get_xaxis().set_visible(False)
-    # plt.savefig(f'./images/2085-{SampleID}_line_{site}.pdf'.format(i))
-    # plt.show()
-
 
 stackplot_params = {0: [19, 33], 3: [16, 27], 4: [18, 31], 2: [10, 30], 1: [15, 44]}
 
@@ -918,20 +782,10 @@ def format_number(x, dec=1):
         return round(x, dec)
 
 
-import matplotlib as mpl
+
 
 mpl.rcParams['pdf.fonttype'] = 42
 
-
-def format_number(x, dec=1):
-    x = float(x)
-    if x % 1 == 0:
-        return int(x)
-    else:
-        return round(x, dec)
-
-
-from matplotlib.cm import get_cmap
 
 fixed_y_gridsize = np.array([[int(x) for x in list(mut_sample_list[0]._scaffold_image.shape)[::-1]][1], 300, 300])
 fixed_y_size = fixed_y_gridsize.sum() / 300
@@ -1081,11 +935,11 @@ for i in range(5):
 
 c = [get_cmap(cmaps[n])(150) for n in names]
 
-data4model = generate_data4model(samples_list=val_sample_list, M=M, n_aug=1)
-sample_dimsR0 = data4model['sample_dims']
+data_for_model = generate_data(samples_list=val_sample_list, M=M, n_aug=1)
+sample_dimsR0 = data_for_model['sample_dims']
 
-data4model = generate_data4model(samples_list=mut_sample_list, M=M, n_aug=1)
-sample_dimsR1 = data4model['sample_dims']
+data_for_model = generate_data(samples_list=mut_sample_list, M=M, n_aug=1)
+sample_dimsR1 = data_for_model['sample_dims']
 
 FR0 = [val_samples_model[f'F_{s}'].reshape(300, *sample_dimsR0[s], -1).copy() for s in range(3)]
 FR1 = [mut_samples_model[f'F_{s}'].reshape(300, *sample_dimsR1[s], -1).copy() for s in range(3)]
@@ -1747,7 +1601,6 @@ exp_gene2type = {exp_gene_groups['ISS Target name'].values[i]: exp_gene_groups['
 exp_gene2oncotype = {OncotypeDX['ISS Target name'].values[i]: OncotypeDX['OncotypeDX'].values[i] for i in
                      range(OncotypeDX.shape[0])}
 
-
 def gene2funcgroup(gene, pannel):
     if pannel == 'imm':
         try:
@@ -1762,23 +1615,15 @@ def gene2funcgroup(gene, pannel):
     else:
         raise KeyError('either exp or imm')
 
-
 def gene2funccolor(gene, pannel):
     colors = {
         "Bcell": "yellow",
         "CD8_cytotoxic": "magenta",  # , 'CD8_naive':'forestgreen', 'CD8_Tcell':'forestgreen',
-        # 'DC': 'purple',
-        # 'fibroblast':'blue','Fibroblast markers':'blue',
-        # 'hypoxia_angiogenesis':'red','Angiogenesis/growth factors':'red',
-        # 'immune_tolerance': 'skyblue',
-        # 'NK':'purple',
         "macrophage": "dimgrey",
         "Macrophage markers": "dimgrey",
         "monocyte": "tomato",
         "pan_immune_cell_marker": "black",
         "Lymphocyte marker": "black",
-        # 'proliferation': 'violet', 'Proliferation':'violet', 'HER2':'violet',
-        # 'Tcell':'brown', 'Tcell_CD4':'brown',
         "Treg": "dodgerblue",
     }
     # 'Stemness/differentiation': 'darkgreen'}
@@ -1855,11 +1700,10 @@ for pannel_id in range(2):
     boundaries_pval = np.array([0] + list([p_vals_chi2[np.where(ranks == r)[0]][0] for r in np.unique(ranks)]))
 
     p_val_th = 0.05
-    # color = [['darkgrey' if i < p_val_th else 'lightgrey' for i in p_vals[s][gene_filtered][subset][order]] for s in range(2)]
+
     gene_names = E_names[gene_filtered][subset][order]
     if pannel_id == 1:
         color = ['darkgrey', 'lightgrey']
-        # color = [[gene2oncocolor(gene) for gene in gene_names], [gene2oncocolor(gene) for gene in gene_names]]
     else:
         color = ['darkgrey', 'lightgrey']
     bpv = np.array(boundaries)[np.where(np.diff(boundaries_pval < p_val_th))[0]]
