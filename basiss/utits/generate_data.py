@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -55,3 +57,13 @@ def generate_data(samples_list, genes, M, n_aug=1):
         "n_genes": n_genes,
         "genes": genes,
     }
+
+
+def get_autobright_file(dirname):
+    for file in os.listdir(dirname):
+        if 'full_autobright.tif' in file:
+            return file
+    for file in os.listdir(dirname):
+        if 'autobright.tif' in file or 'autbright.tif' in file:
+            return file
+    raise ValueError('No autobright file')

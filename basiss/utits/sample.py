@@ -321,3 +321,14 @@ class Sample:
             self.data[k] = np.concatenate([self.data[k], sample.data[k]])
 
         self.iss_probability = np.concatenate([self.iss_probability, sample.iss_probability])
+
+    def to_csv(self, filename):
+        df_dict = {
+            "Name": self.data["Gene"],
+            "Code": np.nan,
+            "Probability": self.iss_probability,
+            "X": self.data["PosX"],
+            "Y": self.data["PosY"],
+            "Tile": np.nan,
+        }
+        pd.DataFrame(df_dict).to_csv(filename, index=False)
