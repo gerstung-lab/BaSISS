@@ -12,11 +12,14 @@ from scipy.ndimage import fourier_shift
 from skimage.filters import window, difference_of_gaussians
 from scipy.fftpack import fft2, fftshift
 from skimage import exposure
+import cv2 as cv
 
 from svgpathtools import svg2paths, wsvg
 import matplotlib.path as mpltPath
 from copy import copy, deepcopy
+import tifffile
 
+import subprocess
 import matplotlib.pyplot as plt
 
 class Sample:
@@ -208,7 +211,7 @@ class Sample:
     
     def _diff_of_gaus(self, img, low_sigma: int = 5, high_sigma: int = 9):
         #TODO replace with difference of kernels
-        original_dtype = copy.copy(img.dtype)
+        original_dtype = copy(img.dtype)
         if original_dtype != np.float32:
             fimg = self._img_to_float(img)
         else:
@@ -295,9 +298,9 @@ class Sample:
         
         print('image load complete')
 
-        img1_small = cv2.resize(img1, (int(img1.shape[1]/upsampling), int(img1.shape[0]/upsampling)))
+        img1_small = cv.resize(img1, (int(img1.shape[1]/upsampling), int(img1.shape[0]/upsampling)))
         self._scaffold_image = img1_small
-        img2_small = cv2.resize(img2, (int(img2.shape[1]/upsampling), int(img2.shape[0]/upsampling)))
+        img2_small = cv.resize(img2, (int(img2.shape[1]/upsampling), int(img2.shape[0]/upsampling)))
         self._original_image = img2_small
         
         

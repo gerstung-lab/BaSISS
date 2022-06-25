@@ -1,1 +1,1 @@
-from _iss_sample import Sample
+from ._iss_sample import Sample
