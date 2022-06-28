@@ -23,8 +23,7 @@ import subprocess
 import matplotlib.pyplot as plt
 
 class Sample:
-    """
-    A strucutral class to store bassis/iss experiment data.
+    """A strucutral class to store bassis/iss experiment data.
 
     ...
 
