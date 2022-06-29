@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def mask_infisble(mut_sample_list, scale, probability=0.6, plot=False):
     """Create a mask of infisible areas according to a set of emperical rules
@@ -57,8 +58,10 @@ def generate_data4model(samples_list, genes, M, n_aug=1, unified_names=None):
     """
     n_samples = len(samples_list)
     n_genes = len(genes)
-    if not unified_names is None:|
+    if not unified_names is None:
         iss_data = [np.transpose(np.array([samples_list[i].gene_grid[unified_name1[i][k]] for k in genes]), [1,2,0]).reshape(-1, n_genes) for i in range(n_samples)]
+    else:
+        iss_data = [np.transpose(np.array([samples_list[i].gene_grid[k] for k in genes]), [1,2,0]).reshape(-1, n_genes) for i in range(n_samples)]
 
     tiles_axes = [samples_list[i].tile_axis for i in range(n_samples)]
 

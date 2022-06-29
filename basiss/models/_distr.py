@@ -13,3 +13,6 @@ def gamma_moments(data, axis=0):
     k = mean**2/var
     theta = var/mean
     return k, theta
+
+def rho2sigma(rho):
+    return np.log(1+np.exp(rho))

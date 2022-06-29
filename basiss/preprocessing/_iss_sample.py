@@ -19,6 +19,8 @@ import matplotlib.path as mpltPath
 from copy import copy, deepcopy
 import tifffile
 
+from tqdm import tqdm
+
 import subprocess
 import matplotlib.pyplot as plt
 
