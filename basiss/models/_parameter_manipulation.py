@@ -1,4 +1,4 @@
-import pymc3 as pm
+import pymc as pm
 import numpy as np
 from tqdm import tqdm
 from ._distr import rho2sigma
@@ -17,16 +17,23 @@ def store_essential_params(var_approx, n_samples, n_factors, n_aug, tiles_axes, 
 
     cov_func_f = pm.gp.cov.ExpQuad(1, ls=1*np.sqrt(scale))
     
-    mus = var_approx.bij.rmap(var_approx.params[0].eval())
-    rhos = var_approx.bij.rmap(var_approx.params[1].eval())
+    varname2slice = var_approx.ordering
+    flat_mus = var_approx.params[0].eval()
+    flat_rhos = var_approx.params[1].eval()
+
+    #mus = var_approx.bij.rmap(var_approx.params[0].eval())
+    #rhos = var_approx.bij.rmap(var_approx.params[1].eval())
     
     fields_f = {}
     for s in ss:
         for f in tqdm(fs):
             name = f'f_f_{f}_{s}'
-            fields_f[name] = gp_params_real_space(mus[name + '_rotated_'], rhos[name + '_rotated_'], (cov_func_f, cov_func_f), tiles_axes[s]).reshape(2, int(tiles_axes[s][0][-1])+1, int(tiles_axes[s][1][-1])+1)
+            fields_f[name] = gp_params_real_space(flat_mus[varname2slice[name + '_rotated_'][1]],
+                                                  flat_rhos[varname2slice[name + '_rotated_'][1]],
+                                                  (cov_func_f, cov_func_f), tiles_axes[s]).reshape(2, int(tiles_axes[s][0][-1])+1, int(tiles_axes[s][1][-1])+1)
         name = f'lm_n_{s}'
-        fields_f[name] = np.stack([mus[name + '_log__'], rho2sigma(rhos[name + '_log__'])]).reshape(2, int(tiles_axes[s][0][-1])+1, int(tiles_axes[s][1][-1])+1)
+        fields_f[name] = np.stack([flat_mus[varname2slice[name + '_log__'][1]],
+                                   rho2sigma(flat_rhos[varname2slice[name + '_log__'][1]])]).reshape(2, int(tiles_axes[s][0][-1])+1, int(tiles_axes[s][1][-1])+1)
     return fields_f
 
 def sample_fields(params, sample, n_factors, n_aug=1, n_draws = 500, t=2, seed=1234):

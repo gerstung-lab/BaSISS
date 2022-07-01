@@ -86,7 +86,7 @@ def plot_field(mut_sample, field, lm, th=0.75,
     elif type(th) is list:
         for i, t in enumerate(th):
             fn[(f[:,:,:n_factors-2]).argmax(2) == i] |= ((f[:,:,n_factors-2:]).sum(2) > t)[(f[:,:,:n_factors-2]).argmax(2) == i]
-    c = [get_cmap(cmaps[n])(150) for n in names] + [(1,1,1,1)] * n_wt
+    c = [get_cmap(cmaps_global[n])(150) for n in names] + [(1,1,1,1)] * n_wt
     
     img = image
     img = (img / img.max() * 255).astype(np.uint8)
@@ -106,12 +106,13 @@ def plot_field(mut_sample, field, lm, th=0.75,
         ax.imshow(out)
         ax.plot([s[0]*0.95,
              s[0]*0.95 - 2.5e3 / 0.325 / scale ],
-             [s[1]*(.05),
-              s[1]*(.05)], color='white', lw=5)
+             [s[1]*(.95),
+              s[1]*(.95)], color='white', lw=5)
+        ax.set_axis_off()
     else:
         plt.imshow(out)
         plt.plot([s[0]*0.95,
              s[0]*0.95 - 2.5e3 / 0.325 / scale ],
-             [s[1]*(.05),
-              s[1]*(.05)], color='white', lw=5)
-   
+             [s[1]*(.95),
+              s[1]*(.95)], color='white', lw=5)
+        plt.axis('off')

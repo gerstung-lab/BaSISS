@@ -45,7 +45,7 @@ def diagnostic_residual(extended_model_params_samples, iss_data, mask, tree, sam
     
     n_genes = tree.shape[1]
     for s in samples:
-        mu = extended_model_params_samples[f'lm_er_{s}'].mean(axis=0)
+        mu = np.array(extended_model_params_samples.posterior[f'lm_er_{s}'])[0].mean(axis=0)
         k = iss_data[s]
         u = stats.uniform.rvs(size=mu.shape[0]*mu.shape[1]).reshape(mu.shape)
         ppois = u * stats.poisson.cdf(k, mu) + (1-u) * stats.poisson.cdf(k-1, mu)
@@ -72,3 +72,16 @@ def diagnostic_residual(extended_model_params_samples, iss_data, mask, tree, sam
         plt.rcParams['figure.facecolor'] = 'w'
         plt.tight_layout()
         plt.show()
+        
+def gaussian_prior_check(n_factors, n_aug, t, ax=None):
+    fs = np.random.randn(1000,n_factors)
+    fs = np.concatenate([fs, np.ones((1000,1))*(-1.7)], axis=1)
+    fs = (np.exp(fs * t) / np.exp(fs * t).sum(1)[:,None])
+    fractions = fs[:,:n_factors] / fs[:,:n_factors].sum(1)[:,None]
+    if ax is None:
+        for i in range(n_factors):
+            plt.hist(fractions[:,i], range=(0,1), bins=100, alpha=0.5, density=True)
+        plt.show()
+    else:
+        for i in range(n_factors):
+            ax.hist(fractions[:,i], range=(0,1), bins=100, alpha=0.5, density=True)
