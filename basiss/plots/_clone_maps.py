@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline, BSpline
 from matplotlib.cm import get_cmap
+import cv2 as cv
+from skimage import exposure
+
 
 cmaps_global = {'grey':"Greys", 'green':"Greens", 'purple':"Purples",'magenta':"RdPu",'blue':"Blues",'red':"Reds",'orange':"YlOrBr",'wt':"Greys", 'residuals':"Greys"}
 pixel2um = 0.325
@@ -13,8 +16,8 @@ def format_number(x, dec=1):
     else:
         return round(x, dec)
 
-def plot_density_stacked(field, lm, site, names = ['grey','green', 'purple', 'blue', 'red', 'orange', 'wt'],
-                         save=False, ax=None, flipped=False, rescale_x=1, grid_mm2=1):
+def plot_density_stacked(field, lm, site, names = ['grey','green', 'purple', 'blue', 'red', 'orange', 'wt'], wt_colour='black',
+                         save=False, ax=None, flipped=False, rescale_x=1, grid_mm2=1,):
     
     if flipped:
         site = -site
@@ -40,16 +43,16 @@ def plot_density_stacked(field, lm, site, names = ['grey','green', 'purple', 'bl
         for i in range(len(line_id_list)-1):
             ax.fill_between(xnew / data.shape[0]*rescale_x, cum, cum + lines_smooth[i], color=color_list[i], alpha=1)
             cum += lines_smooth[i]
-        ax.plot(xnew / data.shape[0]*rescale_x, cum + lines_smooth[i+1], color='black', lw=1.5, alpha=1)
+        ax.plot(xnew / data.shape[0]*rescale_x, cum + lines_smooth[i+1], color=wt_colour, lw=1.5, alpha=1)
 
 
         #ax.set_xlim(-1)
         ax.set_ylim(0)
 
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
-        ax.spines['bottom'].set_visible(False)
-        ax.get_xaxis().set_visible(False)
+        #ax.spines['right'].set_visible(False)
+        #ax.spines['top'].set_visible(False)
+        #ax.spines['bottom'].set_visible(False)
+        #ax.get_xaxis().set_visible(False)
     else:
         for i in range(len(line_id_list)-1):
             plt.fill_between(xnew / data.shape[0] *rescale_x, cum, cum + lines_smooth[i], color=color_list[i], alpha=1)
@@ -65,7 +68,7 @@ def plot_density_stacked(field, lm, site, names = ['grey','green', 'purple', 'bl
 
 def plot_field(mut_sample, field, lm, th=0.75,
                names = ['blue','green', 'orange','purple'], ax=None,
-               image=None, grid_mm2=None, n_factors=None, n_wt = 2, scale=15):
+               image=None, grid_mm2=None, n_factors=None, n_wt = 2, flip=False, scale=15):
     if image is None:
         image = mut_sample._scaffold_image
         
@@ -80,7 +83,7 @@ def plot_field(mut_sample, field, lm, th=0.75,
     l = lm.mean(0)
     
     fmap = (f[:,:,:n_factors-2]).argmax(2)
-    fn = (cv2.blur(l,(3,3)) / grid_mm2 < 300)
+    fn = (cv.blur(l,(3,3)) / grid_mm2 < 300)
     if type(th) is not list:
         fn |= (f[:,:,n_factors-2:]).sum(2) > 0.75
     elif type(th) is list:
@@ -98,9 +101,10 @@ def plot_field(mut_sample, field, lm, th=0.75,
     b = cv.resize(processed_img, s)[::-1,:]/255.
     b = np.maximum(np.minimum(b,1),0)
     Fc = np.array([c[int(i)] for i in fmap.flatten()]).reshape((*fmap.shape,-1)).transpose((1,0,2))[::-1,:,:3]
-    print(Fc.shape, fn.T.shape)
     Fc[fn.T[::-1,:],:]=1.0
     out = (cv.resize(Fc, s) * b.reshape(*b.shape,1))
+    if flip:
+        out = out[::-1,:]
     
     if ax is not None:
         ax.imshow(out)
