@@ -5,17 +5,21 @@ from ._distr import rho2sigma
 
 def gp_params_real_space(mu, rho, cov_funcs, tiles_axes):
     k1, k2 = cov_funcs[0](tiles_axes[0]).eval(), cov_funcs[1](tiles_axes[1]).eval()
-    k = np.kron(k1,k2)
-    chol = np.linalg.cholesky(k)
-    mu_corr = np.linalg.cholesky(k) @ mu
-    sigma_corr = np.diagonal(chol @ np.diag(rho2sigma(rho)) @ chol.T)
+    k1 += np.eye(k1.shape[0]) * 1e-7
+    k2 += np.eye(k2.shape[0]) * 1e-7
+    k1_chol = np.linalg.cholesky(k1)
+    k2_chol = np.linalg.cholesky(k2)
+    
+    k_chol = np.kron(k1_chol,k2_chol)
+    mu_corr = k_chol @ mu
+    sigma_corr = np.diagonal(k_chol @ np.diag(rho2sigma(rho)) @ k_chol.T)
     return np.stack([mu_corr, sigma_corr])
 
-def store_essential_params(var_approx, n_samples, n_factors, n_aug, tiles_axes, scale=3):
+def store_essential_params(var_approx, n_samples, n_factors, n_aug, tiles_axes, scale=3, lsn=1):
     ss = np.arange(n_samples)
     fs = np.arange(n_factors - 1 + n_aug)
 
-    cov_func_f = pm.gp.cov.ExpQuad(1, ls=1*np.sqrt(scale))
+    cov_func_f = pm.gp.cov.ExpQuad(1, ls=lsn*np.sqrt(scale))
     
     varname2slice = var_approx.ordering
     flat_mus = var_approx.params[0].eval()

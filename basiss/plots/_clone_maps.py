@@ -5,7 +5,6 @@ from matplotlib.cm import get_cmap
 import cv2 as cv
 from skimage import exposure
 
-
 cmaps_global = {'grey':"Greys", 'green':"Greens", 'purple':"Purples",'magenta':"RdPu",'blue':"Blues",'red':"Reds",'orange':"YlOrBr",'wt':"Greys", 'residuals':"Greys"}
 pixel2um = 0.325
 
@@ -111,12 +110,12 @@ def plot_field(mut_sample, field, lm, th=0.75,
         ax.plot([s[0]*0.95,
              s[0]*0.95 - 2.5e3 / 0.325 / scale ],
              [s[1]*(.95),
-              s[1]*(.95)], color='white', lw=5)
+              s[1]*(.95)], color='white', lw=3)
         ax.set_axis_off()
     else:
         plt.imshow(out)
         plt.plot([s[0]*0.95,
              s[0]*0.95 - 2.5e3 / 0.325 / scale ],
              [s[1]*(.95),
-              s[1]*(.95)], color='white', lw=5)
+              s[1]*(.95)], color='white', lw=3)
         plt.axis('off')
