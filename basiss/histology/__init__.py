@@ -1,2 +1,3 @@
 from ._histogenomic import Histogenomic_associations
 from ._name_exchange import *
+from ._data_aggregation import output_ducts_composition_raw, output_cell_composition_raw

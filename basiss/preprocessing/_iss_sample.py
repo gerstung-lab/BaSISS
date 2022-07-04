@@ -318,7 +318,6 @@ class Sample:
                                 [ 0.,  0.,  1.]])
             
 
-
         data = warp_matirx @ np.array([self.data['PosX'], self.data['PosY'], np.ones(self.data['PosY'].shape[0]) ])
         self.data['PosX'] = data[0,:]
         self.data['PosY'] = data[1,:]
@@ -361,8 +360,10 @@ class Sample:
                                         [ 0., scale,  0.],
                                         [ 0.,  0.,  1.]]))[:,:-1]
     
-    
-        return {'paths':paths_interpol, 'linetype':[attributes[i]['class'] for i in range(len(paths))]}
+        return {'paths':paths_interpol,
+                'id': [attributes[i]['data-name'].strip()[1:] if attributes[i]['data-name'].strip().startswith('_')
+                       else attributes[i]['data-name'].strip()[:].upper() for i in range(len(paths))],
+                'linetype':[attributes[i]['class'] for i in range(len(paths))]}
            
     def add_gene_data(self, sample):
         for k in self.data.keys():
