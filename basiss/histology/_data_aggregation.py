@@ -84,9 +84,9 @@ Be careful, with the names
 
 def output_cell_composition_raw(sample_panel_list: list, cell_type_df_list: list, expression_type_df_list: list,
                                 cell_groups = ['Epithelial broad', 'Immune broad', 'Stromal broad',
-                                               'Fibroblasts', 'Endothelial', 'Myeloid',
+                                               'Fibroblasts + PVL', 'Endothelial', 'Myeloid',
                                                'T-cells', 'B-cells', 'None', 'Immune total'],
-                                expression_types = ['Epithelial broad', 'Fibroblasts', 'Stromal broad',
+                                expression_types = ['Epithelial broad', 'Fibroblasts + PVL', 'Stromal broad',
                                                     'Immune broad', 'Immune total', 'Myeloid', 'T-cells'],
                                 mode='inner',
                                 distance_inside=-10,
