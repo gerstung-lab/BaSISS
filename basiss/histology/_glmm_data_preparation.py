@@ -9,7 +9,7 @@ def construct_data_for_DE(hga,
                           ids2compare = [[1], [5]],
                           th = [0.7, 0.7],
                           histo_type = 'Epithelial cells',
-                          drop=['POU5F1', 'PTPRC_trans5']):
+                          drop=['PTPRC_trans5', 'nan']):
     
     full_matrix = []
 
@@ -44,7 +44,7 @@ def construct_data_for_regression(hga,
                           ids2compare = [1,5],
                           th = [0.7, 0.7],
                           histo_type = 'Epithelial cells',
-                          drop=['POU5F1', 'PTPRC_trans5']):
+                          drop=['PTPRC_trans5', 'nan']):
     
     full_matrix = []
 
@@ -71,7 +71,7 @@ def construct_data_for_regression(hga,
     return data
 
 
-def prepare_cell_composition_data(hga, sample_id, ids2compare, cancer_type, panel='inner_immune', cells_to_include = ['Immune broad', 'B-cells', 'Myeloid', 'T-cells'],
+def prepare_cell_composition_data(hga, ids2compare, cancer_type, panel='inner_immune', cells_to_include = ['Immune broad', 'B-cells', 'Myeloid', 'T-cells'],
                                   histology_type='Epithelial cells', th=-1):
     
    # if panel == 'inner_immune':
@@ -82,21 +82,22 @@ def prepare_cell_composition_data(hga, sample_id, ids2compare, cancer_type, pane
     full_matrix = []
 
     for i in range(len(ids2compare)):
-        hgas.subset_ids()
-        hgas.subset_ids(hist_condition = np.isin(hgas.histology_df[histology_type], cancer_type[i]),
+        hga.subset_ids()
+        hga.subset_ids(hist_condition = np.isin(hga.histology_df[histology_type], cancer_type[i]),
                                   comp_condition = [(v[:,:-1]/v.sum(1)[:,None]).mean(0).argmax() == ids2compare[i] and 
                                                     (v[:,(v[:,:-1]/v.sum(1)[:,None]).mean(0).argmax()]/v.sum(1)).mean() > th[i]
-                                                    for k,v in hgas.composition_dict.items()])
-        data_matrix = pd.concat([hgas.extra_matrix(panel)[cells_to_include],
-                   hgas.extra_matrix(panel).iloc[:, ~np.isin(hgas.extra_matrix(panel).columns, cells_to_include)].iloc[:,:-2].sum(1).rename('None')], axis=1)
-        data_matrix['clone'] = hgas.comp_matrix.argmax(1)
+                                                    for k,v in hga.composition_dict.items()])
+        data_matrix = pd.concat([hga.extra_matrix(panel)[cells_to_include],
+                   hga.extra_matrix(panel).iloc[:, ~np.isin(hga.extra_matrix(panel).columns, cells_to_include)].iloc[:,:-2].sum(1).rename('None')], axis=1)
+        data_matrix['clone'] = hga.comp_matrix.argmax(1)
         data_matrix['clone_id'] = i
         print(data_matrix.shape)
         data_matrix.index = data_matrix.index.rename('region')
         full_matrix.append(data_matrix)
-        #data_matrix['histology'] = hgas.hist_matrix['Epithelial cells']
+        #data_matrix['histology'] = hga.hist_matrix['Epithelial cells']
 
     full_matrix = pd.concat(full_matrix)
     data = full_matrix.reset_index().melt(id_vars=['region', 'clone','clone_id'], value_vars=data_matrix.columns[:-2], var_name='cell') 
     return data
-    
+
+

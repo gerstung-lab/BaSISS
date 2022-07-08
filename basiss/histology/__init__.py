@@ -2,3 +2,4 @@ from ._histogenomic import Histogenomic_associations
 from ._name_exchange import *
 from ._data_aggregation import output_ducts_composition_raw, output_cell_composition_raw
 from ._glmm_data_preparation import construct_data_for_regression, construct_data_for_DE, prepare_cell_composition_data
+from ._glmm_data_processing import signif_comparisons
