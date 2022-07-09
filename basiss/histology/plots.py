@@ -561,7 +561,7 @@ def plot_cell_composition(data, composition_estimates, ids2compare, cancer_type,
     for i in range(n_entities):
         ps = probs_combined[:,i,:]
         vp = plt.violinplot([ps[:,sub_gene][(ps[:,sub_gene] < np.percentile(ps[:,sub_gene], 99)) & (ps[:,sub_gene] > np.percentile(ps[:,sub_gene], 1))] for sub_gene in range(3)],
-                            positions=np.arange(3) + move[i], showextrema=False, widths=0.3)
+                            positions=np.arange(3) + move[i], showextrema=False, widths=0.3, bw_method=0.4)
         for j in range(3):
             jit = np.random.randn(data_probs_combined[r2c == i].shape[0])
             plt.scatter(np.array([j] * data_probs_combined[r2c == i].shape[0]) + move[i] + jit/50, data_probs_combined[r2c == i][:,j], color='black', s=5)
