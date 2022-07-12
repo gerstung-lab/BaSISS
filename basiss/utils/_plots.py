@@ -1,8 +1,43 @@
 import matplotlib.pyplot as plt
 
-def boxplot_annotate_brackets(num1, num2, center, height, data, dh=.05, barh=0,fs=None, maxasterix=4, p_star=0.05, ax=None):
+
+def boxplot_annotate_brackets(num1, num2, center, height, data, dh=.05, barh=0, fs=None, maxasterix=4, p_star=0.05,
+                              ax=None):
+    """Annotate barplot with p-values, adopted from
+     https://stackoverflow.com/questions/11517986/indicating-the-statistically-significant-difference-in-bar-graph
+
+    Parameters
+    ----------
+    num1 : int
+        Number of left bar to put bracket over
+    num2 : int
+        Number of right bar to put bracket over
+    center : list
+        Centers of all bars (like plt.bar() input)
+    height : list
+        Heights of all bars (like plt.bar() input)
+    data : str
+        String to write or number for generating asterixes
+    dh : float
+        Height offset over bar in axes coordinates (0 to 1)
+    barh : float
+        Extra bar height
+    fs : float
+        Font size
+    maxasterix : int
+        maximum number of asterixes to write (for very small p-values)
+    p_star : float
+        One star unit correspondence to p-value
+    ax : matplotlib.axes._subplots.AxesSubplot
+        Subplot axis to attach the plot to
+
+    Returns
+    -------
+
+    """
+
     """ 
-    Annotate barplot with p-values.
+    
 
     :param num1: number of left bar to put bracket over
     :param num2: number of right bar to put bracket over
@@ -46,8 +81,8 @@ def boxplot_annotate_brackets(num1, num2, center, height, data, dh=.05, barh=0,f
     y = max(ly, ry) + dh
 
     barx = [lx, lx, rx, rx]
-    bary = [y, y+barh, y+barh, y]
-    mid = ((lx+rx)/2, y+barh)
+    bary = [y, y + barh, y + barh, y]
+    mid = ((lx + rx) / 2, y + barh)
 
     if ax is not None:
         ax.plot(barx, bary, c='black', lw=1)

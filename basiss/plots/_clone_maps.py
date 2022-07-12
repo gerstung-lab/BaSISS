@@ -11,6 +11,20 @@ pixel2um = 0.325
 
 
 def format_number(x, dec=1):
+    """Number formatting function for plotting
+
+    Parameters
+    ----------
+    x : str
+        Number as a string
+    dec : int
+        Number of decimals to display
+
+    Returns
+    -------
+    int or float
+        Rounded number
+    """
     x = float(x)
     if x % 1 == 0:
         return int(x)
@@ -19,8 +33,34 @@ def format_number(x, dec=1):
 
 
 def plot_density_stacked(field, lm, site, names=['grey', 'green', 'purple', 'blue', 'red', 'orange', 'wt'],
-                         wt_colour='black',
-                         save=False, ax=None, flipped=False, rescale_x=1, grid_mm2=1, ):
+                         wt_colour='black', ax=None, flipped=False, rescale_x=1, grid_mm2=1):
+    """Plot stacked area chart of clone cell densities
+
+    Parameters
+    ----------
+    field : np.array
+        Samples from clone fields
+    lm : np.array
+        Samples from cell densities
+    site : int
+        y coordinate of tiles to cut trough
+    names : list
+        Names of the clones
+    wt_colour : str
+        Named colour for the wt cells
+    ax : matplotlib.axes._subplots.AxesSubplot
+        Subplot to attach the figure to
+    flipped : bool
+        If the clonal map is flipped
+    rescale_x : float
+        Rescaling factor for x axis
+    grid_mm2 : float
+        Grid area to mm^2 conversion
+
+    Returns
+    -------
+
+    """
     if flipped:
         site = -site
 
@@ -70,6 +110,38 @@ def plot_density_stacked(field, lm, site, names=['grey', 'green', 'purple', 'blu
 def plot_field(mut_sample, field, lm, th=0.75,
                names=['blue', 'green', 'orange', 'purple'], ax=None,
                image=None, grid_mm2=None, n_factors=None, n_wt=2, flip=False, scale=15):
+    """Display clone map - a DAPI image coloured by the dominant clone
+
+    Parameters
+    ----------
+    mut_sample : basiss.preprocessing.Sample
+    field : np.array
+        Samples from clone fields
+    lm : np.array
+        Samples from cell densities
+    th : float or List[float]
+        Clone cell fraction threshold, if list they should correspond to individual clone levels
+    names : list
+        List of clone names
+    ax : matplotlib.axes._subplots.AxesSubplot
+        Subplot to attach the figure to
+    image : None or np.array
+        DAPI image; if None, mut_sample._scaffold_image is used
+    grid_mm2 : float
+        Grid area to mm^2 conversion
+    n_factors : int
+        Number of cancer clone related factors
+    n_wt : int
+        Number of wild type fields (they should be at the end of the array)
+    flip : bool
+        If the clonal map should be flipped
+    scale : float
+        Scale of the provided image, i.e. how much the original tissue size should be downscaled
+
+    Returns
+    -------
+
+    """
     if image is None:
         image = mut_sample._scaffold_image
 
@@ -86,7 +158,7 @@ def plot_field(mut_sample, field, lm, th=0.75,
     fmap = (f[:, :, :n_factors - 2]).argmax(2)
     fn = (cv.blur(l, (3, 3)) / grid_mm2 < 300)
     if type(th) is not list:
-        fn |= (f[:, :, n_factors - 2:]).sum(2) > 0.75
+        fn |= (f[:, :, n_factors - 2:]).sum(2) > th
     elif type(th) is list:
         for i, t in enumerate(th):
             fn[(f[:, :, :n_factors - 2]).argmax(2) == i] |= ((f[:, :, n_factors - 2:]).sum(2) > t)[

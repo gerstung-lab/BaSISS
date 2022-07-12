@@ -1,14 +1,24 @@
-import numpy as np
 import numpyro as npy
 import numpyro.distributions as dist
-from numpyro.infer import MCMC, NUTS
-
-from jax import random
 import jax.numpy as jnp
 import jax.nn
 
 
 def model_jit_de(x, y, g, r, r2c):
+    """GLMM model for differential expression
+
+    Parameters
+    ----------
+    x : np.array
+    y : np.array
+    g : np.array
+    r : np.array
+    r2c : np.array
+
+    Returns
+    -------
+
+    """
     with npy.plate("gene", 10):
         with npy.plate("clone", 2):
             beta_gene_clone = npy.sample("beta_gene", dist.Uniform(-10., 10.))
@@ -23,6 +33,19 @@ def model_jit_de(x, y, g, r, r2c):
 
 
 def model_jit_multiregion(x, y, g, r, r2c):
+    """GLMM model for multiregional expression
+
+    Parameters
+    ----------
+    x : np.array
+    y : np.array
+    g : np.array
+    r : np.array
+    r2c : np.array
+
+    Returns
+    -------
+    """
     with npy.plate("gene", 10):
         with npy.plate("clone", n_clones):
             beta_gene_clone = npy.sample("beta_gene", dist.Uniform(-10., 10.))
@@ -37,6 +60,19 @@ def model_jit_multiregion(x, y, g, r, r2c):
 
 
 def model_jit_composition():
+    """GLMM model for regional cell composition
+
+    Parameters
+    ----------
+    x : np.array
+    y : np.array
+    g : np.array
+    r : np.array
+    r2c : np.array
+
+    Returns
+    -------
+    """
     with npy.plate("celltype", n_celltypes - 1):
         with npy.plate("clone", n_clones):
             beta_celltype_clone = npy.sample("beta_gene", dist.Uniform(-10., 10.))
@@ -49,11 +85,3 @@ def model_jit_composition():
     lam = jnp.concatenate([mu + rho, jnp.ones((n_regions, 1))], axis=1)
     with npy.plate("data", n_regions):
         npy.sample("obs", dist.Multinomial(probs=jax.nn.softmax(lam)), obs=y)
-
-
-def mcmc_compile(model_jit, n_regions, n_clones):
-    n_regions = n_regions
-    n_clones = n_clones
-    nuts_kernel = NUTS(model_jit_de)
-    mcmc = MCMC(nuts_kernel, num_samples=4000, num_warmup=6000, jit_model_args=True, num_chains=4)
-    return mcmc

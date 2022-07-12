@@ -5,6 +5,25 @@ from basiss.utils import inverse_dict
 
 
 def cell_type_decision(expression_table, markers, condition=None, previous_annots=None):
+    """Cell type decision based on the assigned marker genes
+
+    Parameters
+    ----------
+    expression_table : pd.DataFrame
+        Nuclei x genes count table
+    markers : dict
+        Marker gene dictionary {'cell type' : ['gene1', ...], ...}
+    condition : None or dict
+        Conditional structure of cell type assignment based on the hierarchy,
+         {'old type': ['new type 1', 'new type 2', ...]}
+    previous_annots : np.array
+        Array of the previous annotations
+
+    Returns
+    -------
+    np.array
+        Cell type names
+    """
     decisions_made = np.zeros(expression_table.shape[0])
     if (condition is not None) and (previous_annots is not None):
         decision = previous_annots.copy()
@@ -34,6 +53,29 @@ def cell_type_decision(expression_table, markers, condition=None, previous_annot
 
 
 def iss_annotation(sample, broad_markers, narrow_markers, condition, th_dist=5, pix2um=0.325):
+    """Annotation of cell types based on the ISS data and definitive cell type markers
+
+    Parameters
+    ----------
+    sample : basiss.preprocessing.Sample
+        Sample with ISS data
+    broad_markers : dict
+        Broad cell type marker gene dictionary {'cell type' : ['gene1', ...], ...}
+    narrow_markers : dict
+        Narrow cell type marker gene dictionary {'cell type' : ['gene1', ...], ...}
+    condition : dict
+        Conditional structure of cell type assignment based on the hierarchy,
+         {'old type': ['new type 1', 'new type 2', ...]}
+    th_dist : float
+        Distance of the ISS signal from the nucleus centre that is considered
+    pix2um : float
+        pixel to um conversion
+
+    Returns
+    -------
+    dict
+        Dictionary of 2 DataFrames - expression_per_nucleus and nuclei_types
+    """
     nucl = sample.cellpos
     iss_spots = pd.DataFrame(sample.data)[sample.iss_probability > 0.6]
     iss_spots = iss_spots[~np.isin(iss_spots.Gene, ['infeasible', 'background'])]

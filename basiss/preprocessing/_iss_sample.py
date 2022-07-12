@@ -19,8 +19,6 @@ import matplotlib.pyplot as plt
 class Sample:
     """A structural class to store bassis/iss experiment data.
 
-    ...
-
     Attributes
     ----------
     image : str

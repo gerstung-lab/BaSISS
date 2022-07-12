@@ -10,6 +10,22 @@ cmaps_global = {'grey': "Greys", 'green': "Greens", 'purple': "Purples", 'magent
 
 
 def display_raw_fields(params_samples, field_names, sample_names=None, figsize=None):
+    """Plot clonal fields, essentially (clone contribution * cell density) for each clone
+
+    Parameters
+    ----------
+    params_samples: dict
+        Dictionary of the sampled essential parameter (F - field, lm_n - density)
+    field_names : list
+        List of names for the clonal fields
+    sample_names : list or None
+        Names of the samples
+    figsize : tuple
+        Size of the figures for matplotlib.pyplot
+    Returns
+    -------
+
+    """
     fields_loc = [k.startswith('F') for k in params_samples.keys()]
     n_s = np.sum(fields_loc)
     n_f = params_samples[np.array(list(params_samples.keys()))[np.where(fields_loc)[0][0]]].shape[-1]
@@ -47,6 +63,32 @@ def display_raw_fields(params_samples, field_names, sample_names=None, figsize=N
 
 def diagnostic_residual(extended_model_params_samples, iss_data, mask, tree, sample_dims, samples=[0], figsize=(9, 12),
                         subplots=(9, 6), plot_type='hist'):
+    """Diagnostic plot of the model residuals, if the distributions are close to Normal(0, 1) the assumptions hold
+
+    Parameters
+    ----------
+    extended_model_params_samples : arviz.data.inference_data.InferenceData
+        Samples from posterior, output of the pymc.Approximation.sample(n)
+    iss_data : list
+        List of BaSISS count arrays (input to the model) for each tissue sample
+    mask : list
+        List of the boolean arrays which mask bad tiles
+    tree : pd.DataFrame
+        Genome matrix of copy number values for each of the clones and alleles,
+    sample_dims : list
+        List of the tissue samples dimensions
+    samples : list
+        List of the tissue samples to consider
+    figsize : tuple
+        plt figsize param
+    subplots : tuple
+        n rows, n cols of subplots
+    plot_type : 'hist' or 'map'
+        Whether to display histograms or 2D maps
+    Returns
+    -------
+
+    """
     assert plot_type in ['hist', 'map'], 'plot_type should be either "hist" or "map"'
 
     n_genes = tree.shape[1]
@@ -81,6 +123,22 @@ def diagnostic_residual(extended_model_params_samples, iss_data, mask, tree, sam
 
 
 def gaussian_prior_check(n_factors, n_aug, t, ax=None):
+    """Plot prior distribution of the gaussian variables after softmax transform,
+
+    Parameters
+    ----------
+    n_factors : int
+        Number of factors related to clones
+    n_aug : int
+        Number of inhomogeneous noise factors
+    t : float
+        Temperature parameter of the softmax function, np.exp(mat * t) / np.exp(mat * t).sum(axis=-1)
+    ax : matplotlib.axes._subplots.AxesSubplot
+        Subplot to attach the figure to
+    Returns
+    -------
+
+    """
     fs = np.random.randn(1000, n_factors)
     fs = np.concatenate([fs, np.ones((1000, 1)) * (-1.7)], axis=1)
     fs = (np.exp(fs * t) / np.exp(fs * t).sum(1)[:, None])
@@ -100,6 +158,37 @@ def plot_field_comparison(mut_sample_list1, mut_sample_list2,
                           n_samples=3,
                           names=['grey', 'green', 'purple', 'blue', 'red', 'orange', 'wt'],
                           set_name1='R0', set_name2='R1'):
+    """Compare experiment replicas, plot inferred fields next to each other
+
+    Parameters
+    ----------
+    mut_sample_list1 : list
+        List of basiss.preprocessing.Sample for experiment 1
+    mut_sample_list2 : list
+        List of basiss.preprocessing.Sample for experiment 2
+    model_params_samples1 : dict
+        Dictionary of the sampled essential parameter (F - field, lm_n - density) for experiment 1
+    model_params_samples2 : dict
+        Dictionary of the sampled essential parameter (F - field, lm_n - density) for experiment 2
+    mask1 : list
+        List of the boolean arrays which mask bad tiles for experiment 1
+    mask2 : list
+        List of the boolean arrays which mask bad tiles for experiment 2
+    sample_names : list
+        List of sample names
+    n_samples : int
+        Number of samples to display
+    names : list
+        List of clone field names
+    set_name1 : str
+        Name of the experiment 1
+    set_name2 : str
+        Name of the experiment 2
+
+    Returns
+    -------
+
+    """
     c = [get_cmap(cmaps_global[n])(150) for n in names]
 
     FR0 = [model_params_samples1[f'F_{i}'] for i in range(n_samples)]

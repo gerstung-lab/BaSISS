@@ -5,6 +5,24 @@ from ._distr import rho2sigma
 
 
 def gp_params_real_space(mu, rho, cov_funcs, tiles_axes):
+    """Convert mu and rho of GP variables from variational space to the model space
+
+    Parameters
+    ----------
+    mu : np.array
+        mu parameters from the variational approximation
+    rho : np.array
+        rho parameters from the variational approximation
+    cov_funcs : list
+        list of covariance functions
+    tiles_axes : list
+        list of tile positions along 2 axis
+
+    Returns
+    -------
+    np.array
+        mu and sigma parameters in the real space
+    """
     k1, k2 = cov_funcs[0](tiles_axes[0]).eval(), cov_funcs[1](tiles_axes[1]).eval()
     k1 += np.eye(k1.shape[0]) * 1e-7
     k2 += np.eye(k2.shape[0]) * 1e-7
@@ -17,7 +35,33 @@ def gp_params_real_space(mu, rho, cov_funcs, tiles_axes):
     return np.stack([mu_corr, sigma_corr])
 
 
-def store_essential_params(var_approx, n_samples, n_factors, n_aug, tiles_axes, scale=3, lsn=1):
+def store_essential_params(var_approx, n_samples, n_factors,
+                           n_aug, tiles_axes, scale=3, lsn=1):
+    """Get essential variables (f_f - clone factor fields and lm_n - cell density) from variational posterior and
+    convert their parameters to model space
+
+    Parameters
+    ----------
+    var_approx : pymc.Approximation
+        Variational approximation
+    n_samples : int
+        Number of experimental samples (or slides)
+    n_factors : int
+        Number of factors related to clones
+    n_aug : int
+        Number of inhomogeneous noise factors
+    tiles_axes : list
+        List of tile positions along 2 axis
+    scale : float
+        Scale of tiling
+    lsn : int
+        Bandwidth of gaussian process
+
+    Returns
+    -------
+    dict
+        Dictionary of samples from named variables
+    """
     ss = np.arange(n_samples)
     fs = np.arange(n_factors - 1 + n_aug)
 
@@ -26,9 +70,6 @@ def store_essential_params(var_approx, n_samples, n_factors, n_aug, tiles_axes, 
     varname2slice = var_approx.ordering
     flat_mus = var_approx.params[0].eval()
     flat_rhos = var_approx.params[1].eval()
-
-    # mus = var_approx.bij.rmap(var_approx.params[0].eval())
-    # rhos = var_approx.bij.rmap(var_approx.params[1].eval())
 
     fields_f = {}
     for s in ss:
@@ -46,6 +87,30 @@ def store_essential_params(var_approx, n_samples, n_factors, n_aug, tiles_axes, 
 
 
 def sample_fields(params, sample, n_factors, n_aug=1, n_draws=500, t=2, seed=1234):
+    """Sample from gaussian process variables (Clonal Fields)
+
+    Parameters
+    ----------
+    params : dict
+        dictionary of variables parametrised as (mu, sigma) in model space
+    sample : int
+        Experimental sample (Slide) id
+    n_factors : int
+        Number of factors related to clones
+    n_aug : int
+        Number of inhomogeneous noise factors
+    n_draws : int
+        Number of draws from the variable
+    t : float
+        Temperature parameter of the softmax function, np.exp(mat * t) / np.exp(mat * t).sum(axis=-1)
+    seed : float
+        Random seed
+
+    Returns
+    -------
+    np.array
+        Random draws from clone fields
+    """
     rng = np.random.default_rng(seed)
     s = sample
     fs = np.arange(n_factors - 1 + n_aug)
@@ -59,6 +124,23 @@ def sample_fields(params, sample, n_factors, n_aug=1, n_draws=500, t=2, seed=123
 
 
 def sample_densities(params, sample, n_draws=500, seed=1234):
+    """Sample from gaussian random variable (Cell density)
+
+    Parameters
+    ----------
+    params : dict
+        dictionary of variables parametrised as (mu, sigma) in model space
+    sample : int
+        Experimental sample (Slide) id
+    n_draws : int
+        Number of draws from the variable
+    seed : float
+        Random seed
+    Returns
+    -------
+    np.array
+        Random draws from cell density variable
+    """
     rng = np.random.default_rng(seed)
     s = sample
     dims = params[f'lm_n_{s}'][0].shape
@@ -67,6 +149,30 @@ def sample_densities(params, sample, n_draws=500, seed=1234):
 
 
 def sample_essential(params, n_factors, samples=[0], n_draws=500, seed=42, n_aug=1, t=2):
+    """Draw samples from essential variables (F - fields and lm_n - cell density)
+
+    Parameters
+    ----------
+    params : dict
+        dictionary of variables parametrised as (mu, sigma) in model space
+    samples : list
+        List of experiment sample ids (Slides)
+    n_factors : int
+        Number of factors related to clones
+    n_aug : int
+        Number of inhomogeneous noise factors
+    n_draws : int
+        Number of draws from the variable
+    t : float
+        Temperature parameter of the softmax function, np.exp(mat * t) / np.exp(mat * t).sum(axis=-1)
+    seed : float
+        Random seed
+
+    Returns
+    -------
+    dict
+        Dictionary of n_draws random draws from (F - clonal fields and lm_n - cell density)
+    """
     output = {}
     for s in tqdm(samples):
         output[f'F_{s}'] = sample_fields(params, sample=s, n_factors=n_factors, n_aug=n_aug, n_draws=n_draws, t=t,
