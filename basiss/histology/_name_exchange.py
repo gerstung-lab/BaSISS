@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def name_exchange_necrfocal(x):
     if x['Necrosis'] == 'Present - Both' or x['Necrosis'] == 'Present - focal':
         return 'Present'
@@ -5,7 +8,8 @@ def name_exchange_necrfocal(x):
         return 'Absent'
     else:
         return x['Necrosis']
-    
+
+
 def name_exchange_necrcentral(x):
     if x['Necrosis'] == 'Present - Both' or x['Necrosis'] == 'Present - Central':
         return 'Present'
@@ -14,15 +18,16 @@ def name_exchange_necrcentral(x):
     else:
         return x['Necrosis']
 
+
 def name_exchange_necr(x):
     if x['Necrosis'] == 'Present - Both' or x['Necrosis'] == 'Present - Central' or x['Necrosis'] == 'Present - focal':
         return 'Present'
     elif x['Necrosis'] == 'Absent':
         return 'Absent'
     else:
-        return x['Necrosis']    
+        return x['Necrosis']
 
-    
+
 def name_exchange_lymph_stroma(x):
     if x['Lymphocyte infiltrate, stroma'] == 'Prominent' or x['Lymphocyte infiltrate, stroma'] == 'Subtle':
         return 'Present'
@@ -30,7 +35,8 @@ def name_exchange_lymph_stroma(x):
         return 'Absent'
     else:
         return x['Lymphocyte infiltrate, stroma']
-    
+
+
 def name_exchange_lymph_tumor(x):
     if x['Lymphocyte infiltrate, tumor'] == 'Prominent' or x['Lymphocyte infiltrate, tumor'] == 'Subtle':
         return 'Present'
@@ -38,17 +44,18 @@ def name_exchange_lymph_tumor(x):
         return 'Absent'
     else:
         return x['Lymphocyte infiltrate, stroma']
-    
-    
+
+
 def name_exchange_anathomy(x):
     if np.isin(x['Anatomic structure'], ['Terminal lobuli', 'TDLU/Terminal lob.', 'TDLU',
-       'TDLU/terminal lobuli']):
+                                         'TDLU/terminal lobuli']):
         return 'TDLU'
     elif x['Anatomic structure'] == 'Duct':
         return 'Duct'
     else:
         return x['Anatomic structure']
-    
+
+
 def name_exchange_growth(x):
     if np.isin(x['Growth pattern'], ['mixed', 'Mixed', 'IDC, mixed']):
         return 'Mixed'
