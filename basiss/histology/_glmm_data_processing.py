@@ -5,6 +5,26 @@ from scipy.stats import chi2
 
 
 def signif_comparisons(diff_data, signal_data, comparisons, fdr_th=0.1, pre_test_cut=0.4):
+    """
+
+    Parameters
+    ----------
+    diff_data : np.array
+        Array with differential comparison data (output of the glmm)
+    signal_data : pd.DataFrame
+        Input data for glmm
+    comparisons : list
+        List of comparisons between clone/histology to make
+    fdr_th : float
+        FDR to threshold significance
+    pre_test_cut : float
+        Expression rate per region cutoff prior to the test
+
+    Returns
+    -------
+    dict
+        Nested dictionary of fdr values for significant genes dict[gene][comparison]
+    """
     signif_gene_pval = {}
     all_genes = np.array(signal_data.index.to_frame()['gene'].astype('category').cat.categories.to_list())
     for comp in comparisons:

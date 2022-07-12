@@ -11,6 +11,34 @@ def construct_data_for_DE(hga,
                           th=[0.7, 0.7],
                           histo_type='Epithelial cells',
                           drop=['PTPRC_trans5', 'nan']):
+    """Construct data for differential expression glmm
+
+    Parameters
+    ----------
+    hga : basiss.histology.Histogenomic_associations
+        Histogenomic association object of a sample of interest
+    gene_expression_panel : str
+        Name of the cell type specific expression panel (as in hga)
+    iss_panel : str
+        Name of the expression panel
+    cell_type : str
+        Cell type of interest
+    cancer_type : list
+        List of region type
+    ids2compare : list
+        List of clonal ids to compare
+    th :  list
+        List of minimal clone cell fraction thresholds for the regions to be considered
+    histo_type : str
+        Name of the column in hga.histoloy_df where region type is stored
+    drop : list
+        List of genes to drop
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe ready for glmm differential expression analysis
+    """
     full_matrix = []
 
     for i in range(2):
@@ -48,6 +76,35 @@ def construct_data_for_regression(hga,
                                   th=[0.7, 0.7],
                                   histo_type='Epithelial cells',
                                   drop=['PTPRC_trans5', 'nan']):
+    """Construct data for multiregional expression glmm
+
+        Parameters
+        ----------
+        hga : basiss.histology.Histogenomic_associations
+            Histogenomic association object of a sample of interest
+        gene_expression_panel : str
+            Name of the cell type specific expression panel (as in hga)
+        iss_panel : str
+            Name of the expression panel
+        cell_type : str
+            Cell type of interest
+        cancer_type : list
+            List of region type
+        ids2compare : list
+            List of clonal ids to compare
+        th :  list
+            List of minimal clone cell fraction thresholds for the regions to be considered
+        histo_type : str
+            Name of the column in hga.histoloy_df where region type is stored
+        drop : list
+            List of genes to drop
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe ready for multiregional glmm differential expression analysis
+        """
+
     full_matrix = []
 
     for i in range(len(ids2compare)):
@@ -75,13 +132,38 @@ def construct_data_for_regression(hga,
     return data
 
 
-def prepare_cell_composition_data(hga, ids2compare, cancer_type, panel='inner_immune',
+def prepare_cell_composition_data(hga,
+                                  ids2compare,
+                                  cancer_type,
+                                  panel='inner_immune',
                                   cells_to_include=['Immune broad', 'B-cells', 'Myeloid', 'T-cells'],
-                                  histology_type='Epithelial cells', th=-1):
-    # if panel == 'inner_immune':
-    #     cells_to_include = ['Immune broad', 'B-cells', 'Myeloid', 'T-cells']
-    # elif panel == 'inner_onco':
-    #     cells_to_include = ['Epithelial broad', 'Fibroblasts broad']
+                                  histology_type='Epithelial cells',
+                                  th=-1):
+
+    """Construct data for multiregional composition glmm
+
+            Parameters
+            ----------
+            hga : basiss.histology.Histogenomic_associations
+                Histogenomic association object of a sample of interest
+            ids2compare : list
+                List of clonal ids to compare
+            cancer_type : list
+                List of region type
+            panel : str
+                Name of the cell composition panel (as in hga)
+            cells_to_include : list
+                List of cell types to consider
+            histology_type : str
+                Name of the column in hga.histoloy_df where region type is stored
+            th :  list
+                List of minimal clone cell fraction thresholds for the regions to be considered
+
+            Returns
+            -------
+            pd.DataFrame
+                Dataframe ready for multiregional glmm differential composition analysis
+            """
 
     full_matrix = []
 
@@ -101,7 +183,6 @@ def prepare_cell_composition_data(hga, ids2compare, cancer_type, panel='inner_im
         print(data_matrix.shape)
         data_matrix.index = data_matrix.index.rename('region')
         full_matrix.append(data_matrix)
-        # data_matrix['histology'] = hga.hist_matrix['Epithelial cells']
 
     full_matrix = pd.concat(full_matrix)
     data = full_matrix.reset_index().melt(id_vars=['region', 'clone', 'clone_id'], value_vars=data_matrix.columns[:-2],

@@ -6,6 +6,18 @@ from collections import Counter
 
 
 def shoelace(x_y):
+    """Shoelace algorithm for the polygon area calculation
+
+    Parameters
+    ----------
+    x_y : np.array or list
+        Array of x,y coordinates
+
+    Returns
+    -------
+    float
+        Area of the polygon
+    """
     x_y = np.array(x_y)
     x_y = x_y.reshape(-1, 2)
 
@@ -21,6 +33,18 @@ def shoelace(x_y):
 
 
 def length(x_y):
+    """Calculate perimeter of a polygon
+
+    Parameters
+    ----------
+    x_y : np.array or list
+        Array of x,y coordinates
+
+    Returns
+    -------
+    float
+        Perimeter of a polygon
+    """
     x_y = np.array(x_y)
     x_y = x_y.reshape(-1, 2)
 
@@ -33,6 +57,19 @@ def length(x_y):
 
 
 def expand_poly(x_y, distance):
+    """Expand or shrink polygon
+
+    Parameters
+    ----------
+    x_y : np.array
+        Array of x,y coordinates
+    distance : float
+        Distance of the expansion, if negative - deflates
+    Returns
+    -------
+    np.array
+        Array of x,y coordinates
+    """
     ar_sh = shp.Polygon(x_y)
     ar_exp_sh = ar_sh.buffer(distance)
     try:
@@ -42,8 +79,27 @@ def expand_poly(x_y, distance):
         return (np.array(x.exterior.coords) for x in ar_exp_sh.geoms)
 
 
-def output_ducts_composition_raw(mut_sample_list, model_params_samples, indx,
+def output_ducts_composition_raw(mut_sample_list,
+                                 model_params_samples,
+                                 indx,
                                  names=['grey', 'green', 'purple', 'blue', 'red', 'orange', 'wt']):
+    """Compute clone composition for each region (duct)
+
+    Parameters
+    ----------
+    mut_sample_list : list
+        List of mutation samples stored as basiss.preprocessing.Sample
+    model_params_samples : dict
+        Dict of essential parameters F_i (fields) and lm_n_i (cell density)
+    indx : int
+        Index of the sample
+    names : list
+        Names of the clones
+    Returns
+    -------
+    dict
+        Dict of clonal composition for each region noted in basiss.preprocessing.Sample
+    """
     mut_sample_list[indx].data_to_grid(3, probability=0.6)
     sample_d_data = mut_sample_list[indx]
 
@@ -86,7 +142,9 @@ Be careful, with the names
 '''
 
 
-def output_cell_composition_raw(sample_panel_list: list, cell_type_df_list: list, expression_type_df_list: list,
+def output_cell_composition_raw(sample_panel_list: list,
+                                cell_type_df_list: list,
+                                expression_type_df_list: list,
                                 cell_groups=('Epithelial broad', 'Immune broad', 'Stromal broad',
                                              'Fibroblasts + PVL', 'Endothelial', 'Myeloid',
                                              'T-cells', 'B-cells', 'None', 'Immune total'),
@@ -96,6 +154,34 @@ def output_cell_composition_raw(sample_panel_list: list, cell_type_df_list: list
                                 distance_inside=-10,
                                 distance_outside=80,
                                 pixel2um=0.325):
+    """
+
+    Parameters
+    ----------
+    sample_panel_list : list
+        List of samples stored as basiss.preprocessing.Sample
+    cell_type_df_list : list
+        List of dataframes with annotated nuclei information (should be complementary with sample_panel_list)
+    expression_type_df_list : list
+        List of dataframes with expression data (should be complementary with sample_panel_list)
+    cell_groups : list
+        List of cell groups to expect
+    expression_types : list
+        List of cell types for which expression should be calculated
+    mode : 'inner' or 'outer'
+        Look at the area within the region or on its outer margin
+    distance_inside : float
+        Distance by each regions should be deflated (for 'inner' mode)
+    distance_outside :
+        Distance by each regions should be expanded (for 'outer' mode)
+    pixel2um :
+        pixel to micrometers conversion
+
+    Returns
+    -------
+    (pd.DataFrame, pd.DataFrame)
+        Dataframes of composition and cell type specific expression per region
+    """
     paths_id = list(set.intersection(*map(set, [
         [string[1:] if string.startswith('_') else string for string in sample_panel.ducts['id']] for sample_panel in
         sample_panel_list])))

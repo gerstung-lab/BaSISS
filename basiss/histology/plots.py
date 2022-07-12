@@ -17,14 +17,63 @@ import itertools
 def subcl_comp2color(mat,
                      colornames=np.array(['grey', 'green', 'mediumorchid', 'dodgerblue', 'orangered', 'darkorange']),
                      colorscale=1):
+    """Convert clone composition to colour
+
+    Parameters
+    ----------
+    mat : np.array
+        Array of clonal compositions
+    colornames : list
+        List of colour names for clones
+    colorscale : float
+        Factor for colour scale upscaling (for low CCFs)
+
+    Returns
+    -------
+    np.array
+        Array of RGB values
+    """
     ns, nr = mat.shape
     rgba = np.array([[colors.to_rgba(c)] * nr for c in colornames])
     rgba[:, :, -1] = np.minimum(mat * colorscale, 1)
     return rgba
 
 
-def plot_by_epith_extra(hga_selected, sbcl_names, epith_names, hist_columns=None, title=None, plot_labels=False,
+def plot_by_epith_extra(hga_selected,
+                        sbcl_names,
+                        epith_names,
+                        hist_columns=None,
+                        title=None,
+                        plot_labels=False,
                         reorder=None, colorscale=1, th=1):
+    """Plot histogenomic maps by epithelial type (e.g. Normal, DCIS, Invasive)
+
+    Parameters
+    ----------
+    hga_selected : basiss.histology.Histogenomic_associations
+        Histogenomic_association object of a sample
+    sbcl_names : list
+        List of clone names
+    epith_names : list
+        List of epithelial types to consider
+    hist_columns : None or list
+        List of histological features to display
+    title : str
+        Title of the plot
+    plot_labels : bool
+        If x labels (regions names) should be displayed
+    reorder : None or list
+        List of new order for clones (y axis)
+    colorscale : float
+        Upscaling factor for colours
+    th :  float
+        Threshold of clonal fractions to be considered 'dominant'
+
+    Returns
+    -------
+
+    """
+
     if sbcl_names == ['blue', 'green', 'orange', 'purple']:
         colornames = ['dodgerblue', 'green', 'darkorange', 'purple']
     elif sbcl_names == ['grey', 'green', 'purple', 'blue', 'red', 'orange']:
@@ -233,12 +282,30 @@ def plot_by_epith_extra(hga_selected, sbcl_names, epith_names, hist_columns=None
         fig.suptitle(title)
 
 
-def plot_dcis_histogenomics(dcis_data, th=0.4, plotnames=['DCIS PD9694d', 'DCIS PD9694l'],
+def plot_dcis_histogenomics(dcis_data,
+                            th=0.4,
+                            plotnames=['DCIS PD9694d', 'DCIS PD9694l'],
                             sbcl_names=['grey', 'green', 'purple', 'blue', 'red', 'orange']):
+    """Plot histogenomic maps (special function for DCIS samples)
+
+    Parameters
+    ----------
+    dcis_data : list
+        List of basiss.histology.Histogenomic_associations objects (for DCIS samples)
+    th : float
+        Threshold of clonal fractions to be considered 'dominant'
+    plotnames : list
+        List of plot titles
+    sbcl_names : list
+        List of clone names
+
+    Returns
+    -------
+
+    """
+
     hga_selected = dcis_data
     plt.rcParams['figure.facecolor'] = 'w'
-    plotnames = ['DCIS PD9694d', 'DCIS PD9694l']
-    sbcl_names = ['grey', 'green', 'purple', 'blue', 'red', 'orange']
     n_rows = 3
     n_cols = len(hga_selected)
 
@@ -280,8 +347,6 @@ def plot_dcis_histogenomics(dcis_data, th=0.4, plotnames=['DCIS PD9694d', 'DCIS 
             axs[j, i].grid(which='minor', color='w', linestyle='-', linewidth=2)
             if j < n_rows - 1:
                 axs[j, i].tick_params(labelbottom=False)
-
-                # axs[1,i].imshow(np.log10(hga_selected[i].comp_matrix.T.sum(axis=0)[None,:]), vmin=1, vmax=5, cmap='YlOrBr')
 
         # histology
         hist_df = hga_selected[i].hist_matrix
@@ -415,8 +480,31 @@ def plot_dcis_histogenomics(dcis_data, th=0.4, plotnames=['DCIS PD9694d', 'DCIS 
 def vulcano_plot_glmm(diff_data, signal_data, colors,
                       fold_change_cutoff=1.5,
                       fdr_val_cutoff=0.1,
-                      pre_test_cut=1,
+                      pre_test_cut=0.3,
                       adjust=False):
+    """Plot vulcano plots for differential expression analysis
+
+    Parameters
+    ----------
+    diff_data : np.array
+        Array with differential comparison data (output of the glmm)
+    signal_data : pd.DataFrame
+        Input data for glmm
+    colors : list
+        List of two clone specific colours
+    fold_change_cutoff : float
+        Effect size to consider significant
+    fdr_val_cutoff : float
+        FDR to consider significant
+    pre_test_cut : float
+        cutoff of minimal mean signal per region to consider
+    adjust : bool
+        If gene labels should be adjusted (may be slow and failing when gene names are too crowded)
+
+    Returns
+    -------
+
+    """
     genes = np.array(signal_data.index.to_frame()['gene'].astype('category').cat.categories.to_list())
 
     mask = (signal_data['value'].sum(level=0) / signal_data['n_nucl'].sum(level=0) * signal_data['n_nucl'].mean(
@@ -468,7 +556,33 @@ def vulcano_plot_glmm(diff_data, signal_data, colors,
         adjust_text(txts, arrowprops=dict(arrowstyle='-', color='black'), lim=100)
 
 
-def plot_cell_composition(data, composition_estimates, ids2compare, cancer_type, colors, ylims=(0.12, 0.5)):
+def plot_cell_composition(data,
+                          composition_estimates,
+                          ids2compare,
+                          cancer_type,
+                          colors,
+                          ylims=(0.12, 0.5)):
+    """Violin plot of cell composition posteriors
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Input data for compositional glmm
+    composition_estimates : list
+        Output of compositional glmm
+    ids2compare : list
+        Clone ids to compare
+    cancer_type : list
+        Epithelial identities of histogenomic entity
+    colors : list
+        List of clonal colours
+    ylims : tuple
+        Tuple of max ylims for cell composition levels (minor, major)
+
+    Returns
+    -------
+
+    """
     data.index = data.index.rename(['celltype', 'region', 'panel'])
     f = data.index.to_frame()
     df_pivoted = pd.pivot(pd.concat([data, f], 1), index=['panel', 'celltype'], columns='region', values='value')

@@ -1,6 +1,8 @@
 import numpy as np
 
-
+'''
+Deprecated, remove later
+'''
 def name_exchange_necrfocal(x):
     if x['Necrosis'] == 'Present - Both' or x['Necrosis'] == 'Present - focal':
         return 'Present'
