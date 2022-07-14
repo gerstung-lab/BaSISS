@@ -8,7 +8,7 @@ After cloning the repository with
 ```
 git clone git@github.com:gerstung-lab/BaSISS.git
 ```
-Create a new cond environment with all the necessary packages installed
+Create a new conda environment with all the necessary packages installed
 ```
 conda env create -f environment.yml
 conda activate basiss
