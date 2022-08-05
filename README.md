@@ -59,7 +59,7 @@ reflect the stages of cancer progression. For example genetically similar clones
 In this notebook we combine multiple level of information obtained previously, such as histology, cell composition,
 cell type specific expression and genetic maps in a `basiss.histology.Histogenomic_associations`. Then we 
 construct input data for differential composition and expression analysis and display the results of phenotype-genotype association.
-#### <a href="https://github.com/gerstung-lab/BaSISS/blob/main/notebooks/Clones_characterisation.ipynb">GLMM for differential composition and expression</a>
+#### <a href="https://github.com/gerstung-lab/BaSISS/blob/main/notebooks/glmm_run.ipynb">GLMM for differential composition and expression</a>
 Clone associated environment composition and expression data modeled with Generalised Linear Mixture Models. Modelling results are then passed back to the
 **<a href="https://github.com/gerstung-lab/BaSISS/blob/main/notebooks/Clones_characterisation.ipynb">Clone specific phenotype and environment analysis</a>** notebook.
 To run this notebook `numpyro` should be installed with `pip install numpyro`.
