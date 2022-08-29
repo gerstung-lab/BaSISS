@@ -50,7 +50,7 @@ def construct_data_for_DE(hga,
                                            i]
                                        for k, v in hga.composition_dict.items()])
         data_matrix = hga.extra_matrix(gene_expression_panel)
-        data_matrix['clone'] = hga.comp_matrix.argmax(1)
+        data_matrix['clone'] = hga.comp_matrix[:, :-1].argmax(1)
         data_matrix['clone_id'] = i
         print(data_matrix.shape)
         data_matrix.index = data_matrix.index.rename('region')
@@ -115,7 +115,7 @@ def construct_data_for_regression(hga,
                                            i]
                                        for k, v in hga.composition_dict.items()])
         data_matrix = hga.extra_matrix(gene_expression_panel)
-        data_matrix['clone'] = hga.comp_matrix.argmax(1)
+        data_matrix['clone'] = hga.comp_matrix[:, :-1].argmax(1)
         data_matrix['clone_id'] = i
         print(data_matrix.shape)
         data_matrix.index = data_matrix.index.rename('region')
@@ -178,7 +178,7 @@ def prepare_cell_composition_data(hga,
                                  hga.extra_matrix(panel).iloc[:,
                                  ~np.isin(hga.extra_matrix(panel).columns, cells_to_include)].iloc[:, :-2].sum(
                                      1).rename('None')], axis=1)
-        data_matrix['clone'] = hga.comp_matrix.argmax(1)
+        data_matrix['clone'] = hga.comp_matrix[:, :-1].argmax(1)
         data_matrix['clone_id'] = i
         print(data_matrix.shape)
         data_matrix.index = data_matrix.index.rename('region')
