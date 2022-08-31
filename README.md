@@ -1,7 +1,11 @@
-![analysis outline](./images/main-readme.png)
+[![DOI](https://zenodo.org/badge/336373859.svg)](https://zenodo.org/badge/latestdoi/336373859)
 # Spatial genomics maps the structure, character and evolution of cancer clones 
 
-This repository contains code that was used to analyse Base Specific In Situ Sequencing (BaSISS) data, observe coexisting cancer clones and describe their distinctive immunological and phenotypic properties.
+This repository contains code that was used to analyse Base Specific In Situ Sequencing (BaSISS) data, create maps of cancer clones and describe their distinctive immunological and phenotypic properties. 
+
+It accompanies the publication [Spatial genomics maps the structure, character and evolution of cancer clones](https://doi.org/10.1101/2021.04.16.439912), available at bioRxiv.
+
+![analysis outline](./images/main-readme.png)
 
 # Installation
 After cloning the repository with
