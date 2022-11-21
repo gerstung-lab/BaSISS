@@ -17,7 +17,15 @@ Create a new conda environment with all the necessary packages installed
 conda env create -f environment.yml
 conda activate basiss
 ```
-If you want to run the complete analysis yourself, please request the raw data by writing to the email - alomakin@ebi.ac.uk. We are happy to share it, the approximate size of the raw data is 60GB 
+# Data Availability
+
+Complete BaSISS and ISS datasets that are necessary to run the analysis are depositied at Sanger's FTP server ftp://ftp.sanger.ac.uk/pub/cancer/LomakinEtAl_BaSISS. Be aware that the size of the complete dataset is ~ 60GB.
+
+Bulk tissue WGS data are deposited in the European Genome Phenome Archive and are available for download on request (https://ega-archive.org/datasets) with the following accessions: **EGAD00001002696** (P2 samples, with IDs PD14780a, PD14780b, PD14780d and PD14780e) and **EGAD00001000898** (P1 samples, with IDs PD9694a, PD9694b, PD9694c and PD9694d).
+
+Registered fluorescent microscopy images from ISS experiments have been deposited at BioImage Archive (https://www.ebi.ac.uk/bioimage-archive/) under accession number **S-BIAD537**. 
+
+Public data used for single-cell RNA sequencing analysis were obtained from the NCBI’s Gene Expression Omnibus (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE176078). Source data are provided with this paper.
 
 # Interactive maps
 An interactive viewer of the generated data and inferred clone maps is accessible at https://www.cancerclonemaps.org/
@@ -69,10 +77,8 @@ Clone associated environment composition and expression data modeled with Genera
 To run this notebook `numpyro` should be installed with `pip install numpyro`.
 
 ## Citation
-Spatial genomics maps the structure, character and evolution of cancer clones
+Artem Lomakin, Jessica Svedlund, Carina Strell, Milana Gataric, Artem Shmatko, Gleb Rukhovich, Jun Sung Park, Young Seok Ju, Stefan Dentro, Vitalii Kleshchevnikov, Vasyl Vaskivskyi, Tong Li, Omer Ali Bayraktar, Sarah Pinder, Andrea L. Richardson, Sandro Santagata, Peter J. Campbell, Hege Russnes, Moritz Gerstung, Mats Nilsson & Lucy R. Yates.
 
-Artem Lomakin, Jessica Svedlund, Carina Strell, Milana Gataric, Artem Shmatko, Jun Sung Park, Young Seok Ju, Stefan Dentro, Vitalii Kleshchevnikov, Vasyl Vaskivskyi, Tong Li, Omer Ali Bayraktar, Luiza Moore, Sarah Pinder, Andrea L Richardson, Peter J Campbell, Moritz Gerstung, Mats Nilsson, Lucy R Yates
+Spatial genomics maps the structure, nature and evolution of cancer clones. 
 
-bioRxiv 2021.04.16.439912; doi: https://doi.org/10.1101/2021.04.16.439912
-
-Recent contributors: <a href="https://github.com/rukhovich">Gleb Rukhovich</a> (webtool interface), Sandro Santagata and Hege Russnes (histopathological expertise)
+Nature 611, 594–602 (2022). https://doi.org/10.1038/s41586-022-05425-2
